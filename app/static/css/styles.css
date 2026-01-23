@@ -1,0 +1,697 @@
+:root {
+    --font-main: 'Inter', sans-serif;
+    --bg-body: #F3F4F6;
+    /* Cool Gray */
+    --bg-card: #FFFFFF;
+    --primary: #2563EB;
+    /* Royal Blue */
+    --danger: #EF4444;
+    /* Soft Red */
+    --warning: #F59E0B;
+    /* Amber */
+    --success: #10B981;
+    /* Emerald */
+    --text-main: #111827;
+    --text-muted: #6B7280;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --radius: 12px;
+}
+
+body {
+    background-color: var(--bg-body);
+    font-family: var(--font-main);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Card Styling */
+.card {
+    background-color: var(--bg-card);
+    border: none;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 1rem;
+}
+
+
+/* Task Cards specifically */
+.task-card {
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Capacity Widget Styling */
+.capacity-card {
+    background-color: #FFFFFF;
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius);
+}
+
+.capacity-bar-container {
+    height: 8px;
+    background-color: #E5E7EB;
+    border-radius: 4px;
+    /* kept consistent with previous but usually refined to fully rounded if desired, 4px is good for 8px height */
+    overflow: hidden;
+    position: relative;
+    margin-top: 5px;
+}
+
+.capacity-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease-in-out;
+}
+
+.capacity-bar-fill.safe {
+    background-color: var(--primary);
+}
+
+.capacity-bar-fill.overloaded {
+    background-color: var(--danger);
+    box-shadow: 0 0 8px var(--danger);
+}
+
+/* ========================================
+   PREMIUM UI ENHANCEMENTS
+   ======================================== */
+
+/* 1. SEMANTIC STATUS PILLS */
+.badge-soft-completed {
+    background-color: #DCFCE7;
+    color: #14532D;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-soft-in-progress,
+.badge-soft-in_progress {
+    background-color: #DBEAFE;
+    color: #1E3A8A;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-soft-blocked {
+    background-color: #FEE2E2;
+    color: #7F1D1D;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-soft-pending {
+    background-color: #FEF3C7;
+    color: #78350F;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-soft-on-hold,
+.badge-soft-on_hold {
+    background-color: #E0E7FF;
+    color: #3730A3;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-soft-cancelled {
+    background-color: #F3F4F6;
+    color: #374151;
+    border-radius: 9999px;
+    padding: 4px 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 2. SKELETON LOADER ANIMATION */
+.skeleton-loader {
+    background: linear-gradient(90deg,
+            #f0f0f0 0%,
+            #e0e0e0 20%,
+            #f0f0f0 40%,
+            #f0f0f0 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite ease-in-out;
+    border-radius: 4px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.skeleton-text {
+    height: 16px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.skeleton-text-sm {
+    height: 12px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+}
+
+.skeleton-card {
+    height: 120px;
+    margin-bottom: 16px;
+    border-radius: var(--radius);
+}
+
+.skeleton-row {
+    height: 48px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+/* 3. TOAST NOTIFICATION SYSTEM */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 400px;
+}
+
+/* 🚀 PREMIUM TASK MODULE UI (Glass-Neon) */
+.task-module-container {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.task-item-premium {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 5px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.task-item-premium:hover {
+    transform: scale(1.02) translateX(5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Status Specific Styles */
+.overdue-border {
+    border-left-color: #FF1744 !important;
+    box-shadow: -5px 0 15px rgba(255, 23, 68, 0.1);
+}
+
+.upcoming-border {
+    border-left-color: #2979FF !important;
+    box-shadow: -5px 0 15px rgba(41, 121, 255, 0.1);
+}
+
+/* Colores de Título Directos */
+.text-overdue {
+    color: #FF1744 !important;
+    /* Fluorescent Red */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.text-upcoming {
+    color: #2979FF !important;
+    /* Electric Blue */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Ajuste de contenedores para evitar scroll innecesario */
+.task-list-container {
+    max-height: 350px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+/* Scrollbar minimalista para mantener look premium */
+.task-list-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.task-list-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.task-card-premium {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 5px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.task-card-premium:hover {
+    transform: scale(1.02) translateX(5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Text Utilities */
+.text-blocked-neon {
+    color: #FF1744 !important;
+}
+
+.text-inprogress-neon {
+    color: #2979FF !important;
+}
+
+.fw-bold {
+    font-weight: 700 !important;
+}
+
+/* Empty State Illustration Text */
+.empty-state-text {
+    color: #94A3B8;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.toast {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 16px 20px;
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideInRight 0.3s ease-out;
+    min-width: 300px;
+    position: relative;
+}
+
+.toast.toast-exit {
+    animation: slideOutRight 0.3s ease-in forwards;
+}
+
+.toast-success {
+    border-left-color: #10B981;
+}
+
+.toast-error {
+    border-left-color: #EF4444;
+}
+
+.toast-info {
+    border-left-color: #2563EB;
+}
+
+.toast-warning {
+    border-left-color: #F59E0B;
+}
+
+.toast-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.toast-success .toast-icon {
+    color: #10B981;
+}
+
+.toast-error .toast-icon {
+    color: #EF4444;
+}
+
+.toast-info .toast-icon {
+    color: #2563EB;
+}
+
+.toast-warning .toast-icon {
+    color: #F59E0B;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #9CA3AF;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.toast-close:hover {
+    color: #374151;
+}
+
+/* DRAWER STYLES REMOVED (ROLLBACK) */
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Navbar */
+.navbar {
+    background-color: #1F2937 !important;
+    /* Dark Gray */
+    box-shadow: var(--shadow-sm);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-primary:hover {
+    background-color: #1D4ED8;
+    border-color: #1D4ED8;
+}
+
+/* Tables */
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom-width: 1px;
+}
+
+/* Badge */
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* ========================================
+   4. ADVANCED GANTT CHART STYLES
+   ======================================== */
+
+.gantt-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--space-md);
+    position: relative;
+    /* Custom scrollbar for gantt */
+}
+
+.gantt-container::-webkit-scrollbar {
+    height: 8px;
+    background: transparent;
+}
+
+.gantt-container::-webkit-scrollbar-thumb {
+    background: var(--color-gray-300);
+    border-radius: 4px;
+}
+
+/* Frappe Gantt Overrides for Premium Look */
+.gantt .grid-header {
+    fill: transparent;
+    stroke: var(--color-gray-200);
+    stroke-width: 1;
+}
+
+.gantt .grid-row {
+    fill: transparent;
+    stroke: var(--color-gray-100);
+    stroke-width: 1;
+}
+
+.gantt .row-line {
+    stroke: var(--color-gray-100);
+}
+
+.gantt .tick {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    fill: var(--text-tertiary);
+}
+
+.gantt .upper-text {
+    font-size: 14px;
+    font-weight: 600;
+    fill: var(--text-primary);
+}
+
+.gantt .lower-text {
+    font-size: 11px;
+    fill: var(--text-secondary);
+}
+
+/* Bars */
+.gantt .bar-label {
+    fill: var(--text-primary);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 13px;
+}
+
+.gantt .bar-wrapper {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.gantt .bar-wrapper:hover {
+    opacity: 0.9;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.gantt .bar {
+    stroke: none;
+    rx: 4;
+    ry: 4;
+}
+
+/* Status Colors for Gantt Bars */
+.gantt .bar-progress {
+    fill: rgba(255, 255, 255, 0.3);
+}
+
+/* Status Colors overrides - specific to Frappe Gantt structure */
+.gantt .bar-wrapper.completed .bar {
+    fill: var(--color-success);
+}
+
+.gantt .bar-wrapper.in-progress .bar {
+    fill: var(--color-primary);
+}
+
+.gantt .bar-wrapper.blocked .bar {
+    fill: var(--color-danger);
+}
+
+.gantt .bar-wrapper.pending .bar {
+    fill: var(--color-warning);
+}
+
+.gantt .bar-wrapper.on-hold .bar {
+    fill: var(--color-info);
+}
+
+.gantt .bar-wrapper.bar-project .bar {
+    fill: var(--color-gray-800);
+    opacity: 0.7;
+}
+
+.gantt .bar-wrapper.bar-project .bar-label {
+    fill: white;
+    font-weight: 701;
+}
+
+.gantt .bar-wrapper.cancelled .bar {
+    fill: var(--color-gray-500);
+}
+
+/* Popup/Tooltip */
+.gantt-container .popup-wrapper {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-xl);
+    border-radius: var(--radius-lg);
+    padding: var(--space-md);
+    min-width: 200px;
+    backdrop-filter: blur(12px);
+}
+
+.gantt-container .popup-wrapper .title {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--color-gray-200);
+    padding-bottom: var(--space-xs);
+    margin-bottom: var(--space-xs);
+}
+
+.gantt-container .popup-wrapper .subtitle {
+    font-family: var(--font-sans);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+/* Dark Mode Overrides for Gantt */
+[data-theme="dark"] .gantt .grid-header {
+    stroke: var(--color-gray-700);
+}
+
+[data-theme="dark"] .gantt .grid-row {
+    stroke: var(--color-gray-800);
+}
+
+[data-theme="dark"] .gantt .row-line {
+    stroke: var(--color-gray-800);
+}
+
+[data-theme="dark"] .gantt .tick {
+    fill: var(--color-gray-400);
+}
+
+[data-theme="dark"] .gantt .upper-text {
+    fill: var(--color-gray-100);
+}
+
+[data-theme="dark"] .gantt .lower-text {
+    fill: var(--color-gray-400);
+}
+
+[data-theme="dark"] .gantt .bar-label {
+    fill: var(--color-gray-200);
+}
+
+/* ========================================
+   LAYOUT OPTIMIZATION (Bottom White-space)
+   ======================================== */
+body,
+html {
+    min-height: auto !important;
+    height: auto !important;
+}
+
+main.container-fluid {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.tab-content {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.glass-card:last-child {
+    margin-bottom: 0.5rem !important;
+    /* Minimal spacing for last element */
+}
+
+/* Ensure chart containers don't force expansion */
+.chart-container {
+    max-height: 400px !important;
+}
+
+.tab-content,
+.tab-pane {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.glass-card {
+    margin-top: 0 !important;
+}

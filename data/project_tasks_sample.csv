@@ -1,0 +1,21 @@
+Project,Title,Description,Status,Priority,Assigned To,Estimated Hours,Start Date,Due Date,Tags
+Project-1,Setup Mongo Cluster,Configure cloud database cluster sharding,PENDING,HIGH,John Doe,8.5,01/11/2025,15/11/2025,backend database
+Project-1,Fix Payment Gateway,Resolve Stripe integration errors,BLOCKED,CRITICAL,David Kim,4,01/12/2025,10/12/2025,backend payments bugs
+Project-1,Legacy Data Migration,Migrate legacy user data to new schema,PENDING,CRITICAL,David Kim,24,01/12/2025,20/12/2025,database migration
+Project-1,Security Audit Phase 1,Conduct initial security vulnerability scan,IN_PROGRESS,CRITICAL,John Doe,16,15/12/2025,30/12/2025,security audit
+Project-1,Design Landing Page,Create wireframes and mockups for landing,COMPLETED,MEDIUM,Sarah Chen,12,02/01/2026,10/01/2026,frontend design
+Project-1,API Authentication,Build JWT-based auth middleware,COMPLETED,CRITICAL,Michael Rodriguez,16,04/01/2026,15/01/2026,backend security
+Project-2,User Onboarding Flow,Design and implement onboarding wizard,COMPLETED,HIGH,Lisa Anderson,18,05/01/2026,18/01/2026,frontend ux
+Project-2,Dashboard Architecture,Build real-time websocket architecture,IN_PROGRESS,HIGH,Sarah Chen,20,10/01/2026,25/01/2026,frontend architecture
+Project-2,Mobile App Testing,Conduct compatibility tests on iOS/Android,IN_PROGRESS,MEDIUM,Lisa Anderson,15,15/01/2026,30/01/2026,qa mobile
+Project-2,Write Documentation,Complete API endpoint documentation,PENDING,LOW,Emily Watson,6,20/01/2026,05/02/2026,documentation
+Project-2,Deploy to Production,Setup AWS infrastructure and pipelines,PENDING,HIGH,John Doe,20,25/01/2026,10/02/2026,devops deployment
+Project-3,Refactor User Profile,Improve code quality in user module,ON_HOLD,LOW,Michael Rodriguez,10,28/01/2026,15/02/2026,backend refactor
+Project-3,Client Presentation,Prepare quarterly progress slides,PENDING,HIGH,Sarah Chen,8,01/02/2026,20/02/2026,business presentation
+Project-3,Email Notifications,Implement transactional email service,PENDING,MEDIUM,Emily Watson,12,05/02/2026,25/02/2026,backend integration
+Project-3,Performance Tuning,Optimize API response times,PENDING,MEDIUM,Michael Rodriguez,14,10/02/2026,05/03/2026,backend performance
+Project-4,GDPR Compliance,Update privacy policies and data export,PENDING,CRITICAL,John Doe,12,15/02/2026,15/03/2026,legal compliance
+Project-4,Third-party API,Integrate Slack webhooks for alerts,PENDING,MEDIUM,Emily Watson,10,20/02/2026,30/03/2026,integration api
+Project-4,Load Testing,Perform stress tests on endpoints,ON_HOLD,MEDIUM,Michael Rodriguez,8,01/03/2026,10/04/2026,qa performance
+Project-4,UI Component Library,Create reusable React components,IN_PROGRESS,LOW,Lisa Anderson,22,10/01/2026,28/02/2026,frontend components
+Project-4,Backup Systems,Setup automated daily backups,COMPLETED,HIGH,Michael Rodriguez,6,02/01/2026,08/01/2026,infrastructure

@@ -1,0 +1,189 @@
+/* Premium Tab Styles */
+.premium-tabs {
+    border-bottom: 2px solid var(--color-gray-200);
+    padding: 0;
+    gap: 0.5rem;
+}
+
+.premium-tabs .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    border: none;
+    border-bottom: 3px solid transparent;
+    transition: all var(--transition-base);
+    background: transparent;
+}
+
+.premium-tabs .nav-link:hover {
+    color: var(--color-primary);
+    background: var(--color-primary-light);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.premium-tabs .nav-link.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    background: transparent;
+}
+
+.premium-tabs .nav-link svg {
+    width: 18px;
+    height: 18px;
+}
+
+[data-theme="dark"] .premium-tabs {
+    border-bottom-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .premium-tabs .nav-link:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Card Headers */
+.glass-card .card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--color-gray-200);
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+}
+
+[data-theme="dark"] .glass-card .card-header {
+    border-bottom-color: var(--bg-tertiary);
+}
+
+/* Task List Styles */
+#tasks-list .task-card {
+    padding: 1rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.75rem;
+    transition: all var(--transition-fast);
+    cursor: pointer;
+}
+
+#tasks-list .task-card:hover {
+    border-color: var(--color-primary);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    color: var(--color-gray-300);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--text-tertiary);
+    margin-bottom: 1.5rem;
+}
+
+/* Loading Skeletons */
+.skeleton-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.skeleton-box {
+    background: linear-gradient(90deg,
+            var(--color-gray-200) 0%,
+            var(--color-gray-300) 50%,
+            var(--color-gray-200) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-md);
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* INSTALL BANNER STYLES */
+.install-banner {
+    position: fixed;
+    bottom: var(--space-xl);
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    max-width: 400px;
+    width: calc(100% - 2rem);
+    padding: var(--space-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    z-index: 9999;
+    opacity: 0;
+    transition: all var(--transition-slow);
+}
+
+.install-banner.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.install-content {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    flex: 1;
+}
+
+.install-icon {
+    color: var(--color-primary);
+    flex-shrink: 0;
+}
+
+.install-content p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+}
+
+.install-actions {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.install-close {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+}

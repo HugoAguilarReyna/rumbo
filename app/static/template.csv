@@ -1,0 +1,4 @@
+Title,Description,Status,Priority,Estimated Hours,Assigned To,Start Date,Due Date,Tags
+"Initial Project Setup","Create the repo and base files","COMPLETED","HIGH",4.0,"admin","2024-01-01","2024-01-02","setup,core"
+"Database Design","Define MongoDB Collections","IN_PROGRESS","HIGH",8.0,"admin","2024-01-03","2024-01-05","backend,db"
+"Frontend Mockups","Design in Figma","PENDING","MEDIUM",12.0,"","2024-01-06","2024-01-10","design,ui"

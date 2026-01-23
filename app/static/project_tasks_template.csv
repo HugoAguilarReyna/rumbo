@@ -1,0 +1,6 @@
+Project,Title,Status,Priority,Assigned To,Due Date,Estimated Hours,Description
+Dashboard Redesign,Implement Dark Mode,IN_PROGRESS,HIGH,Alice,2026-02-01,8,Add dark mode toggles and CSS variables
+Dashboard Redesign,Update User Profile,PENDING,MEDIUM,Bob,2026-02-05,4,Allow users to update avatar
+API V2,Design Database Schema,COMPLETED,CRITICAL,Charlie,2026-01-20,12,Schema design for new microservices
+API V2,Setup Auth Middleware,IN_PROGRESS,HIGH,Alice,2026-02-10,6,JWT implementation
+Mobile App,Splash Screen,PENDING,LOW,Bob,2026-02-15,2,Animated splash screen
