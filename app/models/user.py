@@ -44,6 +44,12 @@ class UserInDB(UserBase):
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
+        
+class UserUpdate(BaseModel):
+    role: Optional[str] = None
+    daily_capacity: Optional[float] = None
+    weekly_capacity: Optional[float] = None
+    disabled: Optional[bool] = None
 
 class UserResponse(UserBase):
     id: PyObjectId = Field(alias="_id")

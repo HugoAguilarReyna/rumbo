@@ -197,6 +197,7 @@ class ProjectScoreboard {
             'PENDING': 'secondary',
             'IN_PROGRESS': 'primary',
             'COMPLETED': 'success',
+            'REVIEW': 'info',
             'BLOCKED': 'danger',
             'ON_HOLD': 'warning',
             'CANCELLED': 'dark'
@@ -211,14 +212,17 @@ class ProjectScoreboard {
             { key: 'COMPLETED', color: 'success', label: 'Completed' },
             { key: 'IN_PROGRESS', color: 'primary', label: 'In Progress' },
             { key: 'PENDING', color: 'warning', label: 'Pending' },
+            { key: 'REVIEW', color: 'info', label: 'Review' },
             { key: 'BLOCKED', color: 'danger', label: 'Blocked' },
             { key: 'ON_HOLD', color: 'secondary', label: 'On Hold' },
             { key: 'CANCELLED', color: 'dark', label: 'Cancelled' }
         ];
 
-        return config.map(item => {
-            const count = distribution[item.key] || 0;
-            if (count === 0) return '';
+        // Filter out zero counts first to avoid empty segments
+        const activeItems = config.filter(item => (distribution[item.key] || 0) > 0);
+
+        return activeItems.map(item => {
+            const count = distribution[item.key];
             const width = (count / total) * 100;
             return `
                 <div class="progress-bar bg-${item.color}" 

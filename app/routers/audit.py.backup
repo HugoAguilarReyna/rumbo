@@ -1,0 +1,358 @@
+"""
+app/routers/audit.py
+API Endpoints para AI Audit Service
+"""
+
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel, Field
+from typing import List, Optional, Any
+from datetime import datetime
+from bson import ObjectId
+
+# Importar dependencias de autenticación y modelos
+from app.utils.dependencies import get_current_user
+from app.models.user import UserResponse
+from app.services.audit_service import audit_service
+from app.core.database import get_database
+
+router = APIRouter(
+    prefix="/audit",
+    tags=["AI Audit"],
+    responses={404: {"description": "Not found"}},
+)
+
+
+# ============================================================================
+# SCHEMAS PYDANTIC
+# ============================================================================
+
+class TaskAuditInput(BaseModel):
+    """Schema para auditar una tarea individual"""
+    task_name: str
+    estimated_hours: float = Field(gt=0, description="Horas estimadas (debe ser > 0)")
+    assigned_to: Optional[str] = None
+    seniority: Optional[str] = Field(default="Mid", description="Junior|Mid|Senior|Lead")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "task_name": "Implementar OAuth2",
+                "estimated_hours": 16,
+                "assigned_to": "Carlos Ruiz",
+                "seniority": "Mid"
+            }
+        }
+
+
+class AuditResult(BaseModel):
+    """Schema de resultado de auditoría"""
+    benchmark_hours: float
+    risk_level: str
+    confidence_score: float
+    recommended_action: str
+    estimated_fp: float
+    deviation_percentage: float
+    audit_status: str = "completed"
+    audited_at: Optional[str] = None
+
+
+class TaskAuditResponse(BaseModel):
+    """Schema de respuesta completa de auditoría"""
+    task_id: str
+    task_name: str
+    estimated_hours: float
+    ai_audit: AuditResult
+
+
+class BatchAuditResponse(BaseModel):
+    """Schema de respuesta de auditoría masiva"""
+    status: str
+    tasks_audited: int
+    critical_alerts: int
+    details: List[dict]
+
+
+class HealthScoreResponse(BaseModel):
+    """Schema de Health Score del proyecto"""
+    health_score: Optional[float]
+    total_tasks: int
+    grade: str
+    grade_label: Optional[str] = None
+    risk_distribution: dict
+
+
+# ============================================================================
+# ENDPOINTS
+# ============================================================================
+
+@router.post("/single", response_model=TaskAuditResponse)
+async def audit_single_task(task_input: TaskAuditInput):
+    """
+    Audita una tarea individual sin guardar en base de datos.
+    No requiere autenticación obligatoria para pruebas, pero idealmente sí.
+    """
+    try:
+        # Convertir input a diccionario
+        task_dict = task_input.model_dump()
+        
+        # Ejecutar auditoría
+        audit_result = audit_service.audit_task(task_dict)
+        
+        # Construir respuesta
+        response = TaskAuditResponse(
+            task_id="N/A",
+            task_name=task_input.task_name,
+            estimated_hours=task_input.estimated_hours,
+            ai_audit=AuditResult(**audit_result)
+        )
+        
+        return response
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al auditar tarea: {str(e)}"
+        )
+
+
+@router.post("/batch", response_model=BatchAuditResponse)
+async def audit_batch_tasks(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Audita todas las tareas activas del usuario actual en MongoDB y actualiza el campo ai_audit.
+    """
+    try:
+        db = get_database()
+        
+        # Buscar tareas activas del usuario actual usando Motor (Async)
+        query = {
+            "status": {"$ne": "completed"},
+            "owner_id": str(current_user.id)
+        }
+        cursor = db.tasks.find(query)
+        tasks = await cursor.to_list(length=None)
+        
+        if not tasks:
+            # Si no hay tareas pendientes, intentamos buscar todas del usuario
+            query_all = {"owner_id": str(current_user.id)}
+            cursor = db.tasks.find(query_all)
+            tasks = await cursor.to_list(length=None)
+            
+            if not tasks:
+                return BatchAuditResponse(
+                    status="success",
+                    tasks_audited=0,
+                    critical_alerts=0,
+                    details=[]
+                )
+        
+        results = []
+        critical_count = 0
+        
+        for task in tasks:
+            # Prepare task data for audit (map title -> task_name)
+            task_data = task.copy()
+            task_data["task_name"] = task.get("title", "Sin nombre")
+
+            # Ejecutar auditoría
+            audit_result = audit_service.audit_task(task_data)
+            
+            # Actualizar MongoDB usando await (Filtered by owner_id for safety)
+            await db.tasks.update_one(
+                {"_id": task["_id"], "owner_id": str(current_user.id)},
+                {
+                    "$set": {
+                        "ai_audit": audit_result,
+                        "last_audit": datetime.utcnow()
+                    }
+                }
+            )
+            
+            # Contar críticos
+            if audit_result["risk_level"] == "CRITICAL":
+                critical_count += 1
+            
+            # Agregar a resultados
+            results.append({
+                "task_id": str(task["_id"]),
+                "task_name": task.get("title", "Sin nombre"),
+                "risk_level": audit_result["risk_level"],
+                "benchmark_hours": audit_result["benchmark_hours"]
+            })
+        
+        return BatchAuditResponse(
+            status="success",
+            tasks_audited=len(results),
+            critical_alerts=critical_count,
+            details=results
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error en auditoría masiva: {str(e)}"
+        )
+
+
+@router.get("/health-score", response_model=HealthScoreResponse)
+async def get_health_score(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Calcula el Health Score del proyecto (KPI 0-100%) para el usuario actual.
+    """
+    try:
+        db = get_database()
+        
+        # Buscar tareas con auditoría del usuario actual
+        query = {
+            "ai_audit": {"$exists": True},
+            "owner_id": str(current_user.id)
+        }
+        cursor = db.tasks.find(query)
+        tasks = await cursor.to_list(length=None)
+        
+        # Calcular health score
+        health_data = audit_service.calculate_project_health(tasks)
+        
+        return HealthScoreResponse(**health_data)
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al calcular health score: {str(e)}"
+        )
+
+
+@router.get("/critical-tasks")
+async def get_critical_tasks(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Retorna únicamente las tareas en estado CRITICAL del usuario actual.
+    """
+    try:
+        db = get_database()
+        
+        # Buscar tareas críticas del usuario actual
+        query = {
+            "ai_audit.risk_level": "CRITICAL",
+            "owner_id": str(current_user.id)
+        }
+        cursor = db.tasks.find(query)
+        critical_tasks = await cursor.to_list(length=None)
+        
+        # Formatear respuesta
+        formatted_tasks = [
+            {
+                "id": str(task["_id"]),
+                "name": task.get("title", "Sin nombre"),
+                "estimated": task.get("estimated_hours", 0),
+                "benchmark": task.get("ai_audit", {}).get("benchmark_hours", 0),
+                "deviation": task.get("ai_audit", {}).get("deviation_percentage", 0),
+                "action": task.get("ai_audit", {}).get("recommended_action", ""),
+                "assigned_to": task.get("assigned_to", "No asignado")
+            }
+            for task in critical_tasks
+        ]
+        
+        return {
+            "count": len(formatted_tasks),
+            "tasks": formatted_tasks
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener tareas críticas: {str(e)}"
+        )
+
+
+@router.get("/tasks-with-audit")
+async def get_audited_tasks(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Retorna todas las tareas del usuario actual que tienen auditoría.
+    """
+    try:
+        db = get_database()
+        
+        # Buscar tareas auditadas del usuario actual
+        query = {
+            "ai_audit": {"$exists": True},
+            "owner_id": str(current_user.id)
+        }
+        cursor = db.tasks.find(query)
+        tasks = await cursor.to_list(length=None)
+        
+        # Formatear respuesta
+        formatted_tasks = [
+            {
+                "id": str(task["_id"]),
+                "task_name": task.get("title", "Sin nombre"),
+                "estimated_hours": task.get("estimated_hours", 0),
+                "assigned_to": task.get("assigned_to", "No asignado"),
+                "status": task.get("status", "pending"),
+                "ai_audit": task.get("ai_audit", {})
+            }
+            for task in tasks
+        ]
+        
+        return {
+            "total": len(formatted_tasks),
+            "tasks": formatted_tasks
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al obtener tareas auditadas: {str(e)}"
+        )
+
+
+@router.delete("/clear-audits")
+async def clear_all_audits(
+    current_user: UserResponse = Depends(get_current_user)
+):
+    """
+    Elimina todos los campos ai_audit de las tareas del usuario actual.
+    """
+    try:
+        db = get_database()
+        
+        query = {"owner_id": str(current_user.id)}
+        
+        # update_many también es async en Motor
+        result = await db.tasks.update_many(
+            query,
+            {"$unset": {"ai_audit": "", "last_audit": ""}}
+        )
+        
+        return {
+            "status": "success",
+            "tasks_cleared": result.modified_count
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al limpiar auditorías: {str(e)}"
+        )
+
+@router.get("/ping")
+async def ping():
+    """
+    Verifica que el servicio de auditoría esté funcionando
+    """
+    return {
+        "status": "ok",
+        "service": "AI Audit Service",
+        "model": "Valdés-Souto",
+        "version": "2.0.0"
+    }

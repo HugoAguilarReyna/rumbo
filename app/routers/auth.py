@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core import security, config
 from app.core.database import get_database
@@ -24,7 +24,7 @@ class VerifyEmailRequest(BaseModel):
     token: str
 
 @router.post("/register")
-async def register(user: UserCreate):
+async def register(user: UserCreate, background_tasks: BackgroundTasks):
     db = get_database()
     existing_user = await db.users.find_one({"$or": [{"email": user.email}, {"username": user.username}]})
     if existing_user:
@@ -72,7 +72,8 @@ async def register(user: UserCreate):
 
     # Send verification email
     verify_url = f"{config.settings.FRONTEND_URL}/pages/verify-email.html?token={verification_token}"
-    await send_email(
+    background_tasks.add_task(
+        send_email,
         "Verify your account",
         [user.email],
         f"Click here to verify: {verify_url}"

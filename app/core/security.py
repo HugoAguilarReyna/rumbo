@@ -5,10 +5,15 @@ from passlib.context import CryptContext
 from app.core.config import settings
 import secrets
 
+from passlib.exc import UnknownHashError
+
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except (ValueError, UnknownHashError):
+        return False
 
 def get_password_hash(password):
     return pwd_context.hash(password)

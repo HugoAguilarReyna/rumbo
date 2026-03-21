@@ -1,0 +1,16 @@
+D:\antigravity\ProyectM\imagen\GAG_PM_DASH\verify_audit_fix.py:72: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "last_audit": datetime.utcnow()
+Connecting to mongodb+srv://aguilarhugo55_db_user:c5mfG11QT68ib4my@clusteract1.kpdhd5e.mongodb.net/?retryWrites=true&w=majority&appName=ClusterAct1 / PM_BD1...
+Inserted 3 dummy tasks.
+Starting Audit Simulation...
+Auditing: Configurar Firewall
+  -> Risk: SAFE
+  -> Benchmark: 6.48h (vs 8.0h)
+Auditing: Dise±ar Login UI
+  -> Risk: WARNING
+  -> Benchmark: 18.0h (vs 12.0h)
+Auditing: Optimizar Base de Datos
+  -> Risk: WARNING
+  -> Benchmark: 2.28h (vs 4.0h)
+Audit Simulation Completed.
+Verified 3 tasks have 'ai_audit' field.

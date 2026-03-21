@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Environment variables (NEVER commit secrets)
+.env
+.env.local
+.env.production
+
+# Backups & temp scripts
+backups/
+*.zip
+fix_*.py
+write_*.py
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# node (if any)
+node_modules/
+
+# Distribution
+dist/
+build/
+*.egg-info/

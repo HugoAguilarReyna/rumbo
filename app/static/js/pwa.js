@@ -47,7 +47,7 @@ function showInstallPromotion() {
                       stroke="currentColor" stroke-width="2" fill="none"/>
             </svg>
             <div>
-                <strong>Install ProjectHub</strong>
+                <strong>Install RUMBO</strong>
                 <p>Access faster and work offline</p>
             </div>
         </div>

@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RUMBO — Gestor de Tareas</title>
+
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --primary-ghost: rgba(37, 99, 235, .08);
+            --bg-base: #f0f4f8;
+            --bg-card: #fff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-strong: #cbd5e1;
+            --s-pending: #64748b;
+            --s-progress: #2563eb;
+            --s-completed: #16a34a;
+            --s-blocked: #dc2626;
+            --s-hold: #d97706;
+            --s-cancelled: #475569;
+            --p-low: #16a34a;
+            --p-medium: #2563eb;
+            --p-high: #ea580c;
+            --p-critical: #dc2626;
+            --radius: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --shadow-sm: 0 1px 3px rgba(15, 23, 42, .06);
+            --shadow: 0 4px 16px rgba(15, 23, 42, .08);
+            --shadow-lg: 0 12px 40px rgba(15, 23, 42, .14);
+            --shadow-primary: 0 4px 20px rgba(37, 99, 235, .35);
+            --transition: all 0.2s cubic-bezier(.4, 0, .2, 1);
+            --font-display: 'Sora', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-base);
+            color: var(--text-primary);
+            font-size: 14px;
+            min-height: 100vh;
+            margin: 0
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: var(--font-display)
+        }
+
+        /* TOPBAR */
+        .rt-topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-sm)
+        }
+
+        .rt-brand-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 13px;
+            box-shadow: var(--shadow-primary);
+            flex-shrink: 0
+        }
+
+        .rt-topbar-spacer {
+            flex: 1
+        }
+
+        .rt-search-wrap {
+            position: relative;
+            width: 240px
+        }
+
+        .rt-search-wrap .bi {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+            pointer-events: none
+        }
+
+        .rt-search {
+            width: 100%;
+            padding: 7px 10px 7px 30px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-family: var(--font-body);
+            font-size: 13px;
+            background: #f8fafc;
+            color: var(--text-primary);
+            transition: var(--transition);
+            outline: none
+        }
+
+        .rt-search:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px var(--primary-ghost)
+        }
+
+        .rt-view-toggle {
+            display: flex;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 3px;
+            gap: 2px
+        }
+
+        .rt-view-btn {
+            border: none;
+            background: transparent;
+            border-radius: 7px;
+            padding: 5px 9px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 15px;
+            transition: var(--transition);
+            line-height: 1
+        }
+
+        .rt-view-btn.active {
+            background: var(--bg-card);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm)
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            padding: 7px 14px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            box-shadow: var(--shadow-primary)
+        }
+
+        .action-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px)
+        }
+
+        /* FILTER BAR */
+        .rt-filterbar {
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .rt-filter-select {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-family: var(--font-body);
+            font-size: 12px;
+            color: var(--text-primary);
+            background: #f8fafc;
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition)
+        }
+
+        .rt-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 9px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #f8fafc;
+            color: var(--text-secondary)
+        }
+
+        .rt-chip.active {
+            background: var(--primary-ghost);
+            border-color: var(--primary);
+            color: var(--primary)
+        }
+
+        .rt-count-badge {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-left: auto
+        }
+
+        /* MAIN */
+        .rt-main {
+            padding: 14px 10px
+        }
+
+        /* STATS */
+        .rt-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 10px;
+            margin-bottom: 18px
+        }
+
+        .rt-stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition)
+        }
+
+        .rt-stat-card:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-2px)
+        }
+
+        .rt-stat-val {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 3px
+        }
+
+        .rt-stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .04em
+        }
+
+        .rt-stat-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px
+        }
+
+        /* KANBAN */
+        .rt-kanban {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            align-items: flex-start
+        }
+
+        .rt-kanban::-webkit-scrollbar {
+            height: 4px
+        }
+
+        .rt-kanban::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 10px
+        }
+
+        .rt-column {
+            flex: 0 0 280px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            border: 1px solid var(--border)
+        }
+
+        .rt-column.drag-over {
+            box-shadow: 0 0 0 2px var(--primary), var(--shadow)
+        }
+
+        .rt-col-header {
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .rt-col-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+        .rt-col-title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text-primary);
+            flex: 1
+        }
+
+        .rt-col-count {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: var(--text-muted);
+            border: 1px solid var(--border)
+        }
+
+        .rt-col-body {
+            padding: 8px;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px
+        }
+
+        .rt-col-add {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 7px;
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: var(--transition);
+            margin-top: 2px
+        }
+
+        .rt-col-add:hover {
+            background: var(--primary-ghost);
+            color: var(--primary)
+        }
+
+        /* CARD */
+        .rt-card {
+            background: #fff;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 12px 13px;
+            cursor: grab;
+            transition: var(--transition);
+            position: relative;
+            box-shadow: var(--shadow-sm)
+        }
+
+        .rt-card:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow);
+            transform: translateY(-2px)
+        }
+
+        .rt-card.dragging {
+            opacity: .4;
+            cursor: grabbing
+        }
+
+        .rt-card-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 7px;
+            margin-bottom: 7px
+        }
+
+        .rt-card-title {
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.4;
+            flex: 1
+        }
+
+        .rt-card-menu {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 15px;
+            line-height: 1;
+            transition: var(--transition);
+            flex-shrink: 0
+        }
+
+        .rt-card-menu:hover {
+            background: #f8fafc;
+            color: var(--text-primary)
+        }
+
+        .rt-priority-bar {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            border-radius: var(--radius) 0 0 var(--radius)
+        }
+
+        .rt-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center
+        }
+
+        .rt-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 20px;
+            letter-spacing: .02em;
+            text-transform: uppercase
+        }
+
+        .rt-card-footer {
+            margin-top: 9px;
+            padding-top: 9px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 7px
+        }
+
+        .rt-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: 700;
+            font-family: var(--font-display);
+            flex-shrink: 0
+        }
+
+        .rt-assignee {
+            font-size: 11px;
+            color: var(--text-secondary);
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .rt-due {
+            font-size: 10px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0
+        }
+
+        .rt-due.overdue {
+            color: var(--p-critical)
+        }
+
+        .rt-progress-wrap {
+            margin-top: 7px
+        }
+
+        .rt-progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-bottom: 3px
+        }
+
+        .rt-progress-track {
+            height: 4px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden
+        }
+
+        .rt-progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 10px;
+            transition: width .6s ease
+        }
+
+        /* LIST */
+        .rt-list {
+            display: flex;
+            flex-direction: column;
+            gap: 7px
+        }
+
+        .rt-list-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px;
+            gap: 10px;
+            padding: 7px 18px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .rt-list-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px;
+            gap: 10px;
+            padding: 12px 18px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            align-items: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm)
+        }
+
+        .rt-list-row:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow);
+            transform: translateX(3px)
+        }
+
+        .rt-list-title {
+            font-family: var(--font-display);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 7px
+        }
+
+        .rt-list-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end
+        }
+
+        .rt-icon-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            transition: var(--transition)
+        }
+
+        .rt-icon-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-ghost)
+        }
+
+        .rt-icon-btn.danger:hover {
+            border-color: var(--p-critical);
+            color: var(--p-critical);
+            background: rgba(220, 38, 38, .07)
+        }
+
+        /* EMPTY */
+        .rt-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted)
+        }
+
+        .rt-empty-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+            opacity: .5
+        }
+
+        .rt-empty-title {
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 5px
+        }
+
+        /* SKELETON */
+        .rt-skeleton {
+            background: linear-gradient(90deg, var(--border) 25%, #f8fafc 50%, var(--border) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shine 1.4s infinite;
+            border-radius: 6px
+        }
+
+        @keyframes skeleton-shine {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
+
+        /* MODAL */
+        .rt-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .55);
+            backdrop-filter: blur(3px);
+            z-index: 1050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity .25s ease;
+            pointer-events: none
+        }
+
+        .rt-modal-backdrop.open {
+            opacity: 1;
+            pointer-events: all
+        }
+
+        .rt-modal {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(24px) scale(.97);
+            transition: transform .3s cubic-bezier(.34, 1.56, .64, 1)
+        }
+
+        .rt-modal-backdrop.open .rt-modal {
+            transform: translateY(0) scale(1)
+        }
+
+        .rt-modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .rt-modal-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius);
+            background: var(--primary-ghost);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+            flex-shrink: 0
+        }
+
+        .rt-modal-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            flex: 1
+        }
+
+        .rt-modal-close {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: #f8fafc;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 17px;
+            color: var(--text-muted);
+            transition: var(--transition)
+        }
+
+        .rt-modal-close:hover {
+            background: var(--border);
+            color: var(--text-primary)
+        }
+
+        .rt-modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1
+        }
+
+        .rt-form-group {
+            margin-bottom: 16px
+        }
+
+        .rt-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: .03em
+        }
+
+        .rt-label .required {
+            color: var(--p-critical);
+            margin-left: 3px
+        }
+
+        .rt-input,
+        .rt-textarea,
+        .rt-select {
+            width: 100%;
+            padding: 8px 11px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--text-primary);
+            background: #f8fafc;
+            transition: var(--transition);
+            outline: none
+        }
+
+        .rt-input:focus,
+        .rt-textarea:focus,
+        .rt-select:focus {
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 3px var(--primary-ghost)
+        }
+
+        .rt-input.error,
+        .rt-textarea.error,
+        .rt-select.error {
+            border-color: var(--p-critical)
+        }
+
+        .rt-error-msg {
+            font-size: 11px;
+            color: var(--p-critical);
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px
+        }
+
+        .rt-textarea {
+            resize: vertical;
+            min-height: 72px
+        }
+
+        .rt-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        .rt-range-wrap {
+            display: flex;
+            align-items: center;
+            gap: 9px
+        }
+
+        .rt-range {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 10px;
+            background: var(--border);
+            outline: none;
+            cursor: pointer
+        }
+
+        .rt-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer
+        }
+
+        .rt-range-val {
+            min-width: 36px;
+            text-align: right;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary)
+        }
+
+        .rt-modal-footer {
+            padding: 14px 24px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 9px;
+            justify-content: flex-end
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: var(--radius);
+            padding: 7px 14px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--border-strong);
+            color: var(--text-primary);
+            background: #f8fafc
+        }
+
+        .btn-danger {
+            background: rgba(220, 38, 38, .08);
+            border: 1.5px solid rgba(220, 38, 38, .25);
+            color: var(--p-critical);
+            border-radius: var(--radius);
+            padding: 7px 14px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .btn-danger:hover {
+            background: var(--p-critical);
+            color: #fff;
+            border-color: var(--p-critical)
+        }
+
+        /* CONFIRM MODAL */
+        .rt-confirm-modal {
+            max-width: 400px
+        }
+
+        .rt-confirm-body {
+            text-align: center;
+            padding: 22px 24px 6px
+        }
+
+        .rt-confirm-icon {
+            font-size: 38px;
+            color: var(--p-critical);
+            margin-bottom: 12px
+        }
+
+        .rt-confirm-title {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 7px
+        }
+
+        .rt-confirm-sub {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6
+        }
+
+        .rt-confirm-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-style: italic
+        }
+
+        /* TOASTS */
+        .rt-toasts {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none
+        }
+
+        .rt-toast {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 11px 16px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            box-shadow: var(--shadow-lg);
+            pointer-events: all;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all .35s cubic-bezier(.34, 1.2, .64, 1);
+            min-width: 260px;
+            max-width: 340px;
+            border-left: 4px solid var(--primary)
+        }
+
+        .rt-toast.show {
+            transform: translateX(0);
+            opacity: 1
+        }
+
+        .rt-toast.success {
+            border-color: var(--s-completed)
+        }
+
+        .rt-toast.error {
+            border-color: var(--p-critical)
+        }
+
+        .rt-toast.warning {
+            border-color: var(--s-hold)
+        }
+
+        /* DROPDOWN */
+        .rt-dropdown {
+            position: absolute;
+            right: 10px;
+            top: 34px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            z-index: 200;
+            min-width: 130px;
+            padding: 4px;
+            display: none
+        }
+
+        .rt-dropdown.open {
+            display: block;
+            animation: fadeSlide .15s ease
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-5px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .rt-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 9px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left
+        }
+
+        .rt-dropdown-item:hover {
+            background: #f8fafc
+        }
+
+        .rt-dropdown-item.danger {
+            color: var(--p-critical)
+        }
+
+        .rt-dropdown-item.danger:hover {
+            background: rgba(220, 38, 38, .07)
+        }
+
+        .rt-dropdown-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0
+        }
+
+        /* STATUS / PRIORITY */
+        .status-pending {
+            background: rgba(100, 116, 139, .1);
+            color: var(--s-pending)
+        }
+
+        .status-in_progress {
+            background: rgba(37, 99, 235, .1);
+            color: var(--s-progress)
+        }
+
+        .status-completed {
+            background: rgba(22, 163, 74, .1);
+            color: var(--s-completed)
+        }
+
+        .status-blocked {
+            background: rgba(220, 38, 38, .1);
+            color: var(--s-blocked)
+        }
+
+        .status-on_hold {
+            background: rgba(217, 119, 6, .1);
+            color: var(--s-hold)
+        }
+
+        .status-cancelled {
+            background: rgba(71, 85, 105, .1);
+            color: var(--s-cancelled)
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .spin {
+            animation: spin 1s linear infinite
+        }
+    </style>
+</head>
+
+<body>
+    <div id="rumbo-tasks">
+
+        <!-- TOPBAR -->
+        <header class="rt-topbar">
+            <div class="rt-brand-icon">R</div>
+            <span style="font-family:var(--font-display);font-weight:700;font-size:15px;">Gestor de Tareas</span>
+            <div class="rt-topbar-spacer"></div>
+            <div class="rt-search-wrap">
+                <i class="bi bi-search"></i>
+                <input id="rt-search-input" class="rt-search" type="text" placeholder="Buscar tareas…"
+                    oninput="RumboTasks.onSearch(this.value)" />
+            </div>
+            <div class="rt-view-toggle">
+                <button class="rt-view-btn active" id="btn-kanban" onclick="RumboTasks.setView('kanban')"
+                    title="Kanban"><i class="bi bi-kanban"></i></button>
+                <button class="rt-view-btn" id="btn-list" onclick="RumboTasks.setView('list')" title="Lista"><i
+                        class="bi bi-list-ul"></i></button>
+            </div>
+            <button class="action-btn" onclick="RumboTasks.openModal()"><i class="bi bi-plus-lg"></i> Nueva
+                Tarea</button>
+        </header>
+
+        <!-- FILTER BAR -->
+        <div class="rt-filterbar">
+            <select class="rt-filter-select" id="filter-project" onchange="RumboTasks.applyFilters()">
+                <option value="">Todos los proyectos</option>
+            </select>
+            <select class="rt-filter-select" id="filter-priority" onchange="RumboTasks.applyFilters()">
+                <option value="">Prioridad</option>
+                <option value="CRITICAL">Crítica</option>
+                <option value="HIGH">Alta</option>
+                <option value="MEDIUM">Media</option>
+                <option value="LOW">Baja</option>
+            </select>
+            <select class="rt-filter-select" id="filter-assignee" onchange="RumboTasks.applyFilters()">
+                <option value="">Asignado a</option>
+            </select>
+            <div id="status-chips" style="display:flex;gap:5px;flex-wrap:wrap">
+                <div class="rt-chip active" onclick="RumboTasks.filterByStatus(this,'')"><i
+                        class="bi bi-grid-3x3-gap-fill"></i> Todos</div>
+                <div class="rt-chip" onclick="RumboTasks.filterByStatus(this,'PENDING')">Pendiente</div>
+                <div class="rt-chip" onclick="RumboTasks.filterByStatus(this,'IN_PROGRESS')">En Progreso</div>
+                <div class="rt-chip" onclick="RumboTasks.filterByStatus(this,'COMPLETED')">Completado</div>
+                <div class="rt-chip" onclick="RumboTasks.filterByStatus(this,'BLOCKED')">Bloqueado</div>
+            </div>
+            <span class="rt-count-badge" id="task-count">0 tareas</span>
+        </div>
+
+        <!-- MAIN -->
+        <main class="rt-main">
+            <div class="rt-stats" id="rt-stats"></div>
+            <div id="view-kanban" class="rt-kanban"></div>
+            <div id="view-list" style="display:none">
+                <div class="rt-list-header">
+                    <span>Tarea</span><span>Responsable</span><span>Prioridad</span>
+                    <span>Fecha límite</span><span>Progreso</span><span style="text-align:right">Acciones</span>
+                </div>
+                <div class="rt-list" id="rt-list-body"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL CREAR/EDITAR -->
+    <div class="rt-modal-backdrop" id="task-modal" onclick="RumboTasks.onBackdropClick(event)">
+        <div class="rt-modal" role="dialog" aria-modal="true">
+            <div class="rt-modal-header">
+                <div class="rt-modal-icon"><i class="bi bi-clipboard-check" id="modal-icon"></i></div>
+                <div class="rt-modal-title" id="modal-title">Nueva Tarea</div>
+                <button class="rt-modal-close" onclick="RumboTasks.closeModal()"><i class="bi bi-x"></i></button>
+            </div>
+            <div class="rt-modal-body">
+                <input type="hidden" id="field-id" />
+                <div class="rt-form-group">
+                    <label class="rt-label" for="field-title">Título <span class="required">*</span></label>
+                    <input class="rt-input" id="field-title" type="text" placeholder="Nombre de la tarea…" />
+                    <div class="rt-error-msg" id="err-title" style="display:none"><i
+                            class="bi bi-exclamation-circle"></i> Campo obligatorio</div>
+                </div>
+                <div class="rt-form-group">
+                    <label class="rt-label" for="field-desc">Descripción</label>
+                    <textarea class="rt-textarea" id="field-desc" placeholder="Contexto, objetivos…"></textarea>
+                </div>
+                <div class="rt-form-row">
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-status">Estado</label>
+                        <select class="rt-select" id="field-status">
+                            <option value="PENDING">⬜ Pendiente</option>
+                            <option value="IN_PROGRESS">🔵 En Progreso</option>
+                            <option value="COMPLETED">✅ Completado</option>
+                            <option value="BLOCKED">🔴 Bloqueado</option>
+                            <option value="ON_HOLD">🟡 En Espera</option>
+                            <option value="CANCELLED">⚫ Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-priority">Prioridad</label>
+                        <select class="rt-select" id="field-priority">
+                            <option value="LOW">🟢 Baja</option>
+                            <option value="MEDIUM" selected>🔵 Media</option>
+                            <option value="HIGH">🟠 Alta</option>
+                            <option value="CRITICAL">🔴 Crítica</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="rt-form-row">
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-project">Proyecto (ID)</label>
+                        <input class="rt-input" id="field-project" type="text" placeholder="ID del proyecto" />
+                    </div>
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-assignee">Asignado a</label>
+                        <input class="rt-input" id="field-assignee" type="text" placeholder="username" />
+                    </div>
+                </div>
+                <div class="rt-form-row">
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-start">Fecha inicio</label>
+                        <input class="rt-input" id="field-start" type="date" />
+                    </div>
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-due">Fecha límite</label>
+                        <input class="rt-input" id="field-due" type="date" />
+                    </div>
+                </div>
+                <div class="rt-form-row">
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-hours">Horas estimadas</label>
+                        <input class="rt-input" id="field-hours" type="number" min="0" step="0.5" placeholder="0.0" />
+                    </div>
+                    <div class="rt-form-group">
+                        <label class="rt-label" for="field-logged">Horas registradas</label>
+                        <input class="rt-input" id="field-logged" type="number" min="0" step="0.5" placeholder="0.0" />
+                    </div>
+                </div>
+                <div class="rt-form-group">
+                    <label class="rt-label">Progreso</label>
+                    <div class="rt-range-wrap">
+                        <input class="rt-range" id="field-progress" type="range" min="0" max="100" value="0"
+                            oninput="document.getElementById('progress-display').textContent=this.value+'%'" />
+                        <span class="rt-range-val" id="progress-display">0%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="rt-modal-footer">
+                <button class="btn-ghost" onclick="RumboTasks.closeModal()"><i class="bi bi-x"></i> Cancelar</button>
+                <button class="action-btn" id="modal-save-btn" onclick="RumboTasks.saveTask()">
+                    <i class="bi bi-floppy" id="save-icon"></i><span id="save-label">Guardar Tarea</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR BORRADO -->
+    <div class="rt-modal-backdrop" id="delete-modal" onclick="RumboTasks.onDeleteBackdropClick(event)">
+        <div class="rt-modal rt-confirm-modal" role="dialog" aria-modal="true">
+            <div class="rt-confirm-body">
+                <div class="rt-confirm-icon"><i class="bi bi-trash3"></i></div>
+                <div class="rt-confirm-title">¿Eliminar esta tarea?</div>
+                <div class="rt-confirm-sub">Eliminarás <span class="rt-confirm-name"
+                        id="delete-task-name">"Tarea"</span>. Esta acción es permanente.</div>
+            </div>
+            <div class="rt-modal-footer" style="justify-content:center;gap:12px;">
+                <button class="btn-ghost" onclick="RumboTasks.closeDeleteModal()"><i class="bi bi-arrow-left"></i>
+                    Cancelar</button>
+                <button class="btn-danger" id="confirm-delete-btn" onclick="RumboTasks.confirmDelete()"><i
+                        class="bi bi-trash3"></i> Sí, eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="rt-toasts" id="rt-toasts"></div>
+
+    <script>
+        'use strict';
+        const API_BASE = '/api/tasks';
+        const STATUSES = [
+            { key: 'PENDING', label: 'Pendiente', color: '#64748b', icon: 'bi-circle' },
+            { key: 'IN_PROGRESS', label: 'En Progreso', color: '#2563eb', icon: 'bi-arrow-repeat' },
+            { key: 'COMPLETED', label: 'Completado', color: '#16a34a', icon: 'bi-check-circle' },
+            { key: 'BLOCKED', label: 'Bloqueado', color: '#dc2626', icon: 'bi-slash-circle' },
+            { key: 'ON_HOLD', label: 'En Espera', color: '#d97706', icon: 'bi-pause-circle' },
+            { key: 'CANCELLED', label: 'Cancelado', color: '#475569', icon: 'bi-x-circle' },
+        ];
+        const PM = { LOW: { label: 'Baja', color: '#16a34a' }, MEDIUM: { label: 'Media', color: '#2563eb' }, HIGH: { label: 'Alta', color: '#ea580c' }, CRITICAL: { label: 'Crítica', color: '#dc2626' } };
+        const State = { tasks: [], filtered: [], view: 'kanban', filters: { status: '', priority: '', project: '', assignee: '', search: '' }, pendingDeleteId: null, dragTaskId: null };
+
+        const getToken = () => localStorage.getItem('access_token') || localStorage.getItem('token') || sessionStorage.getItem('access_token') || sessionStorage.getItem('token') || '';
+        const authHeaders = () => ({ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() });
+
+        const API = {
+            async req(url, opts = {}) {
+                const r = await fetch(url, { ...opts, headers: { ...authHeaders(), ...(opts.headers || {}) } });
+                if (!r.ok) { const body = await r.text().catch(() => ''); console.error('[RumboTasks] HTTP ' + r.status, url, body.slice(0, 300)); throw new Error('HTTP ' + r.status + ': ' + body.slice(0, 120)); }
+                return r.status === 204 ? null : r.json().catch(() => null);
+            },
+            fetchTasks: async () => {
+                const d = await API.req(API_BASE + '/');
+                return Array.isArray(d) ? d : (d ? (d.items || d.tasks || d.data || []) : []);
+            },
+            createTask: (d) => API.req(API_BASE + '/', { method: 'POST', body: JSON.stringify(d) }),
+            updateTask: (id, d) => API.req(API_BASE + '/' + id, { method: 'PUT', body: JSON.stringify(d) }),
+            deleteTask: (id) => API.req(API_BASE + '/' + id, { method: 'DELETE' }),
+        };
+
+        function toast(msg, type = 'info', dur = 3500) {
+            const icons = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+            const c = document.getElementById('rt-toasts');
+            const el = document.createElement('div');
+            el.className = 'rt-toast ' + type;
+            el.innerHTML = '<i class="bi ' + (icons[type] || icons.info) + '" style="font-size:16px;flex-shrink:0"></i><span>' + msg + '</span>';
+            c.appendChild(el);
+            requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+            setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400) }, dur);
+        }
+
+        function fmtDate(iso) { if (!iso) return '—'; try { return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) } catch { return iso } }
+        function isOverdue(d) { return d && new Date(d) < new Date() }
+        function getInitials(n) { return n ? n.split(/[\s._-]/).map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?' }
+        function avatarColor(n) { if (!n) return '#2563eb'; const c = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#0891b2', '#d97706']; let h = 0; for (let i = 0; i < n.length; i++)h = (h * 31 + n.charCodeAt(i)) & 0xffffffff; return c[Math.abs(h) % c.length] }
+        function sm(k) { return STATUSES.find(s => s.key === k) || { label: k, color: '#64748b', icon: 'bi-circle' } }
+        function pm(k) { return PM[k] || { label: k, color: '#64748b' } }
+        function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
+        function tid(t) { return t._id || t.id }
+
+        function applyFilters() {
+            const f = State.filters;
+            State.filtered = State.tasks.filter(t => {
+                if (f.status && t.status !== f.status) return false;
+                if (f.priority && t.priority !== f.priority) return false;
+                if (f.project && t.project_id !== f.project) return false;
+                if (f.assignee && t.assigned_to !== f.assignee) return false;
+                if (f.search) { const q = f.search.toLowerCase(); if (!(t.title || '').toLowerCase().includes(q) && !(t.description || '').toLowerCase().includes(q)) return false }
+                return true;
+            });
+            document.getElementById('task-count').textContent = State.filtered.length + ' tarea' + (State.filtered.length !== 1 ? 's' : '');
+            render();
+        }
+
+        function renderStats() {
+            const ts = State.tasks;
+            const rows = [
+                { val: ts.length, label: 'Total', dot: '#64748b' },
+                { val: ts.filter(t => t.status === 'IN_PROGRESS').length, label: 'En progreso', dot: '#2563eb' },
+                { val: ts.filter(t => t.status === 'COMPLETED').length, label: 'Completadas', dot: '#16a34a' },
+                { val: ts.filter(t => t.status === 'BLOCKED').length, label: 'Bloqueadas', dot: '#dc2626' },
+                { val: ts.reduce((a, t) => a + (t.estimated_hours || 0), 0).toFixed(1) + 'h', label: 'Horas est.', dot: '#7c3aed' },
+            ];
+            document.getElementById('rt-stats').innerHTML = rows.map(s => `<div class="rt-stat-card"><div class="rt-stat-val">${s.val}</div><div class="rt-stat-label"><span class="rt-stat-dot" style="background:${s.dot}"></span>${s.label}</div></div>`).join('');
+        }
+
+        function renderCard(t) {
+            const p = pm(t.priority), s = sm(t.status), over = isOverdue(t.due_date), prog = t.progress || 0, av = avatarColor(t.assigned_to), id = tid(t);
+            return `<div class="rt-card" draggable="true" data-id="${id}" ondragstart="RumboTasks.onDragStart(event,'${id}')" ondragend="RumboTasks.onDragEnd(event)">
+    <div class="rt-priority-bar" style="background:${p.color}"></div>
+    <div class="rt-card-top">
+      <div class="rt-card-title">${esc(t.title)}</div>
+      <button class="rt-card-menu" onclick="RumboTasks.toggleDropdown(event,'${id}')"><i class="bi bi-three-dots"></i></button>
+      <div class="rt-dropdown" id="dd-${id}">
+        <button class="rt-dropdown-item" onclick="RumboTasks.openModal('${id}')"><i class="bi bi-pencil"></i> Editar</button>
+        <div class="rt-dropdown-divider"></div>
+        <button class="rt-dropdown-item danger" onclick="RumboTasks.askDelete('${id}','${esc(t.title)}')"><i class="bi bi-trash3"></i> Eliminar</button>
+      </div>
+    </div>
+    <div class="rt-card-meta">
+      <span class="rt-badge status-${(t.status || '').toLowerCase()}"><i class="bi ${s.icon}"></i> ${s.label}</span>
+      <span class="rt-badge" style="background:${p.color}18;color:${p.color}">${p.label}</span>
+    </div>
+    ${prog > 0 ? `<div class="rt-progress-wrap"><div class="rt-progress-label"><span>Progreso</span><span>${prog}%</span></div><div class="rt-progress-track"><div class="rt-progress-fill" style="width:${prog}%;background:${p.color}"></div></div></div>` : ''}
+    <div class="rt-card-footer">
+      <div class="rt-avatar" style="background:${av}">${getInitials(t.assigned_to)}</div>
+      <span class="rt-assignee">${t.assigned_to || 'Sin asignar'}</span>
+      ${t.due_date ? `<span class="rt-due${over ? ' overdue' : ''}"><i class="bi bi-calendar3"></i> ${fmtDate(t.due_date)}</span>` : ''}
+    </div>
+  </div>`;
+        }
+
+        function renderKanban() {
+            const board = document.getElementById('view-kanban'), tasks = State.filtered;
+            board.innerHTML = STATUSES.map(s => {
+                const cols = tasks.filter(t => t.status === s.key);
+                return `<div class="rt-column" ondragover="RumboTasks.onDragOver(event)" ondrop="RumboTasks.onDrop(event,'${s.key}')" ondragleave="RumboTasks.onDragLeave(event)">
+      <div class="rt-col-header"><div class="rt-col-dot" style="background:${s.color}"></div><div class="rt-col-title">${s.label}</div><div class="rt-col-count">${cols.length}</div></div>
+      <div class="rt-col-body" id="col-${s.key}">${cols.length ? cols.map(renderCard).join('') : `<div class="rt-empty" style="padding:20px 10px"><div style="font-size:22px;opacity:.3"><i class="bi bi-inbox"></i></div><div style="font-size:11px;color:var(--text-muted);margin-top:5px">Sin tareas</div></div>`}</div>
+      <button class="rt-col-add" onclick="RumboTasks.openModal(null,'${s.key}')"><i class="bi bi-plus-lg"></i> Agregar tarea</button>
+    </div>`;
+            }).join('');
+        }
+
+        function renderList() {
+            const body = document.getElementById('rt-list-body'), tasks = State.filtered;
+            if (!tasks.length) { body.innerHTML = '<div class="rt-empty"><div class="rt-empty-icon"><i class="bi bi-clipboard-x"></i></div><div class="rt-empty-title">Sin tareas</div><div style="font-size:13px;color:var(--text-muted)">Crea una nueva tarea con el botón de arriba.</div></div>'; return }
+            body.innerHTML = tasks.map(t => {
+                const p = pm(t.priority), over = isOverdue(t.due_date), av = avatarColor(t.assigned_to), prog = t.progress || 0, id = tid(t);
+                return `<div class="rt-list-row" onclick="RumboTasks.openModal('${id}')">
+      <div class="rt-list-title"><div style="width:7px;height:7px;border-radius:50%;background:${p.color};flex-shrink:0"></div><span>${esc(t.title)}</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div class="rt-avatar" style="background:${av};width:20px;height:20px;font-size:8px">${getInitials(t.assigned_to)}</div><span style="font-size:12px;color:var(--text-secondary)">${t.assigned_to || '—'}</span></div>
+      <div><span class="rt-badge" style="background:${p.color}18;color:${p.color}">${p.label}</span></div>
+      <div class="rt-due${over ? ' overdue' : ''}" style="font-size:12px">${t.due_date ? '<i class="bi bi-calendar3"></i> ' + fmtDate(t.due_date) : '—'}</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:4px;background:var(--border);border-radius:10px;overflow:hidden;max-width:70px"><div style="height:100%;width:${prog}%;background:${p.color};border-radius:10px"></div></div><span style="font-size:11px;font-weight:700;color:var(--text-muted)">${prog}%</span></div>
+      <div class="rt-list-actions" onclick="event.stopPropagation()">
+        <div class="rt-icon-btn" onclick="RumboTasks.openModal('${id}')" title="Editar"><i class="bi bi-pencil"></i></div>
+        <div class="rt-icon-btn danger" onclick="RumboTasks.askDelete('${id}','${esc(t.title)}')" title="Eliminar"><i class="bi bi-trash3"></i></div>
+      </div>
+    </div>`;
+            }).join('');
+        }
+
+        function render() {
+            renderStats();
+            if (State.view === 'kanban') { renderKanban(); document.getElementById('view-kanban').style.display = 'flex'; document.getElementById('view-list').style.display = 'none' }
+            else { renderList(); document.getElementById('view-kanban').style.display = 'none'; document.getElementById('view-list').style.display = 'block' }
+        }
+
+        // Drag & Drop
+        function onDragStart(e, id) { State.dragTaskId = id; e.target.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move' }
+        function onDragEnd(e) { e.target.classList.remove('dragging') }
+        function onDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; e.currentTarget.classList.add('drag-over') }
+        function onDragLeave(e) { e.currentTarget.classList.remove('drag-over') }
+        async function onDrop(e, newStatus) {
+            e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+            if (!State.dragTaskId) return;
+            const t = State.tasks.find(x => tid(x) === State.dragTaskId);
+            if (!t || t.status === newStatus) return;
+            const old = t.status; t.status = newStatus; applyFilters();
+            try { await API.updateTask(State.dragTaskId, { status: newStatus }); toast('Movida a "' + sm(newStatus).label + '"', 'success') }
+            catch { t.status = old; applyFilters(); toast('Error al mover la tarea', 'error') }
+            State.dragTaskId = null;
+        }
+
+        // Dropdown
+        function toggleDropdown(e, id) {
+            e.stopPropagation();
+            const dd = document.getElementById('dd-' + id);
+            document.querySelectorAll('.rt-dropdown.open').forEach(d => { if (d !== dd) d.classList.remove('open') });
+            dd.classList.toggle('open');
+        }
+        document.addEventListener('click', e => { if (!e.target.closest('.rt-card-menu')) document.querySelectorAll('.rt-dropdown.open').forEach(d => d.classList.remove('open')) });
+
+        // Modal
+        function openModal(taskId = null, defaultStatus = 'PENDING') {
+            document.querySelectorAll('.rt-dropdown.open').forEach(d => d.classList.remove('open'));
+            resetForm();
+            if (taskId) {
+                const t = State.tasks.find(x => tid(x) === taskId);
+                if (t) fillForm(t);
+                document.getElementById('modal-title').textContent = 'Editar Tarea';
+                document.getElementById('modal-icon').className = 'bi bi-pencil-square';
+                document.getElementById('save-label').textContent = 'Guardar cambios';
+            } else {
+                document.getElementById('field-status').value = defaultStatus;
+                document.getElementById('modal-title').textContent = 'Nueva Tarea';
+                document.getElementById('modal-icon').className = 'bi bi-clipboard-plus';
+                document.getElementById('save-label').textContent = 'Crear Tarea';
+            }
+            document.getElementById('task-modal').classList.add('open');
+            setTimeout(() => document.getElementById('field-title').focus(), 300);
+        }
+        function closeModal() { document.getElementById('task-modal').classList.remove('open') }
+        function onBackdropClick(e) { if (e.target === e.currentTarget) closeModal() }
+
+        function resetForm() {
+            ['field-id', 'field-title', 'field-desc', 'field-project', 'field-assignee', 'field-start', 'field-due', 'field-hours', 'field-logged'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '' });
+            document.getElementById('field-status').value = 'PENDING';
+            document.getElementById('field-priority').value = 'MEDIUM';
+            document.getElementById('field-progress').value = '0';
+            document.getElementById('progress-display').textContent = '0%';
+            document.getElementById('err-title').style.display = 'none';
+            document.getElementById('field-title').classList.remove('error');
+        }
+        function fillForm(t) {
+            document.getElementById('field-id').value = tid(t) || '';
+            document.getElementById('field-title').value = t.title || '';
+            document.getElementById('field-desc').value = t.description || '';
+            document.getElementById('field-status').value = t.status || 'PENDING';
+            document.getElementById('field-priority').value = t.priority || 'MEDIUM';
+            document.getElementById('field-project').value = t.project_id || '';
+            document.getElementById('field-assignee').value = t.assigned_to || '';
+            document.getElementById('field-hours').value = t.estimated_hours || '';
+            document.getElementById('field-logged').value = t.logged_hours || '';
+            const p = t.progress || 0; document.getElementById('field-progress').value = p; document.getElementById('progress-display').textContent = p + '%';
+            if (t.start_date) document.getElementById('field-start').value = t.start_date.slice(0, 10);
+            if (t.due_date) document.getElementById('field-due').value = t.due_date.slice(0, 10);
+        }
+
+        async function saveTask() {
+            const title = document.getElementById('field-title').value.trim();
+            if (!title) { document.getElementById('field-title').classList.add('error'); document.getElementById('err-title').style.display = 'flex'; document.getElementById('field-title').focus(); return }
+            document.getElementById('field-title').classList.remove('error'); document.getElementById('err-title').style.display = 'none';
+            const payload = {
+                title, description: document.getElementById('field-desc').value.trim() || null,
+                status: document.getElementById('field-status').value, priority: document.getElementById('field-priority').value,
+                project_id: document.getElementById('field-project').value.trim() || null,
+                assigned_to: document.getElementById('field-assignee').value.trim() || null,
+                estimated_hours: parseFloat(document.getElementById('field-hours').value) || null,
+                logged_hours: parseFloat(document.getElementById('field-logged').value) || null,
+                progress: parseInt(document.getElementById('field-progress').value) || 0,
+                start_date: document.getElementById('field-start').value || null,
+                due_date: document.getElementById('field-due').value || null,
+            };
+            const id = document.getElementById('field-id').value;
+            const btn = document.getElementById('modal-save-btn');
+            btn.disabled = true; document.getElementById('save-icon').className = 'bi bi-arrow-repeat spin'; document.getElementById('save-label').textContent = id ? 'Guardando…' : 'Creando…';
+            try {
+                if (id) { const upd = await API.updateTask(id, payload); const idx = State.tasks.findIndex(t => tid(t) === id); if (idx !== -1) State.tasks[idx] = { ...State.tasks[idx], ...upd }; toast('Tarea actualizada', 'success') }
+                else { const cr = await API.createTask(payload); State.tasks.unshift(cr); toast('Tarea creada', 'success') }
+                populateSelects(); applyFilters(); closeModal();
+            } catch (err) { console.error(err); toast('Error al guardar. ¿Sesión activa?', 'error') }
+            finally { btn.disabled = false; document.getElementById('save-icon').className = 'bi bi-floppy'; document.getElementById('save-label').textContent = id ? 'Guardar cambios' : 'Crear Tarea' }
+        }
+
+        // Delete
+        function askDelete(id, name) {
+            document.querySelectorAll('.rt-dropdown.open').forEach(d => d.classList.remove('open'));
+            State.pendingDeleteId = id; document.getElementById('delete-task-name').textContent = '"' + name + '"';
+            document.getElementById('delete-modal').classList.add('open');
+        }
+        function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('open'); State.pendingDeleteId = null }
+        function onDeleteBackdropClick(e) { if (e.target === e.currentTarget) closeDeleteModal() }
+        async function confirmDelete() {
+            const id = State.pendingDeleteId; if (!id) return;
+            const btn = document.getElementById('confirm-delete-btn'); btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Eliminando…';
+            try { await API.deleteTask(id); State.tasks = State.tasks.filter(t => tid(t) !== id); populateSelects(); applyFilters(); closeDeleteModal(); toast('Tarea eliminada', 'warning') }
+            catch { toast('No se pudo eliminar', 'error') }
+            finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash3"></i> Sí, eliminar' }
+        }
+
+        function filterByStatus(el, status) { document.querySelectorAll('.rt-chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); State.filters.status = status; applyFilters() }
+
+        function populateSelects() {
+            const projects = [...new Set(State.tasks.map(t => t.project_id).filter(Boolean))];
+            const pSel = document.getElementById('filter-project'); const curP = pSel.value;
+            pSel.innerHTML = '<option value="">Todos los proyectos</option>' + projects.map(p => `<option value="${esc(p)}"${p === curP ? ' selected' : ''}>${esc(p)}</option>`).join('');
+            const assignees = [...new Set(State.tasks.map(t => t.assigned_to).filter(Boolean))];
+            const aSel = document.getElementById('filter-assignee'); const curA = aSel.value;
+            aSel.innerHTML = '<option value="">Asignado a</option>' + assignees.map(a => `<option value="${esc(a)}"${a === curA ? ' selected' : ''}>${esc(a)}</option>`).join('');
+        }
+
+        ['filter-priority', 'filter-project', 'filter-assignee'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                State.filters.priority = document.getElementById('filter-priority').value;
+                State.filters.project = document.getElementById('filter-project').value;
+                State.filters.assignee = document.getElementById('filter-assignee').value;
+                applyFilters();
+            });
+        });
+
+        async function loadTasks() {
+            document.getElementById('view-kanban').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-muted)"><i class="bi bi-arrow-repeat spin" style="font-size:28px"></i><p style="margin-top:10px;font-size:13px">Cargando tareas…</p></div>';
+            try {
+                const data = await API.fetchTasks();
+                State.tasks = Array.isArray(data) ? data : (data.items || data.tasks || data.data || []);
+                populateSelects(); applyFilters();
+            } catch (err) {
+                console.error('Error cargando tareas:', err);
+                State.tasks = []; populateSelects(); applyFilters();
+                toast('No se pudieron cargar las tareas (¿sesión activa?)', 'error', 5000);
+            }
+        }
+
+        function setView(v) {
+            State.view = v;
+            document.getElementById('btn-kanban').classList.toggle('active', v === 'kanban');
+            document.getElementById('btn-list').classList.toggle('active', v === 'list');
+            render();
+        }
+
+        let searchTimer;
+        function onSearch(val) { clearTimeout(searchTimer); searchTimer = setTimeout(() => { State.filters.search = val.trim(); applyFilters() }, 220) }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closeModal(); closeDeleteModal() }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); document.getElementById('rt-search-input').focus() }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openModal() }
+        });
+
+        window.RumboTasks = {
+            openModal, closeModal, onBackdropClick, saveTask,
+            askDelete, confirmDelete, closeDeleteModal, onDeleteBackdropClick,
+            setView, onSearch, applyFilters, filterByStatus, toggleDropdown,
+            onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+        };
+
+        document.addEventListener('DOMContentLoaded', loadTasks);
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

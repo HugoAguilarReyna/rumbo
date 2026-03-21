@@ -1,0 +1,684 @@
+/* ==================== TABLA NEXT-GEN RUMBO ==================== */
+/* File: app/static/css/tabla-premium-rumbo.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    /* Next-Gen Brand Colors */
+    --ng-primary: #5865F2;
+    --ng-primary-dark: #404EED;
+    --ng-primary-glow: rgba(88, 101, 242, 0.4);
+    --ng-accent: #00D4FF;
+    --ng-success: #23A559;
+    --ng-warning: #F0B232;
+    --ng-error: #DA373C;
+
+    /* Ultra Premium Palette */
+    --ng-bg: #FFFFFF;
+    --ng-surface: rgba(255, 255, 255, 0.85);
+    --ng-surface-hover: rgba(255, 255, 255, 0.95);
+    --ng-border: rgba(88, 101, 242, 0.08);
+    --ng-border-hover: rgba(88, 101, 242, 0.2);
+    --ng-text-main: #2C2F33;
+    --ng-text-sec: #5c5e66;
+
+    /* Effects */
+    --glass-blur: blur(16px);
+    --neo-shadow: 0 8px 32px rgba(88, 101, 242, 0.06);
+    --inner-glow: inset 0 0 20px rgba(255, 255, 255, 0.8);
+}
+
+/* ==================== CONTAINER ==================== */
+
+.performance-table-container {
+    background: var(--ng-surface);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 32px;
+    box-shadow:
+        0 20px 60px -10px rgba(88, 101, 242, 0.1),
+        0 0 1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    position: relative;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Mesh Gradient Background Effect */
+.performance-table-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(88, 101, 242, 0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+    animation: rotateMesh 20s linear infinite;
+}
+
+@keyframes rotateMesh {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.performance-table-container:hover {
+    transform: translateY(-4px) scale(1.002);
+    box-shadow: 0 30px 80px -12px rgba(88, 101, 242, 0.15);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* ==================== HEADER ==================== */
+
+.table-header {
+    padding: 32px 40px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%);
+    border-bottom: 1px solid var(--ng-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+.table-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--ng-primary-dark);
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.table-title::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 24px;
+    background: linear-gradient(to bottom, var(--ng-accent), var(--ng-primary));
+    border-radius: 4px;
+}
+
+.table-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.table-action-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--ng-border);
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--ng-text-sec);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    backdrop-filter: blur(4px);
+}
+
+.table-action-btn:hover {
+    background: var(--ng-primary);
+    color: white;
+    border-color: var(--ng-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(88, 101, 242, 0.25);
+}
+
+/* ==================== TABLE ==================== */
+
+.premium-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: 'Outfit', sans-serif;
+    position: relative;
+    z-index: 1;
+}
+
+.premium-table thead th {
+    padding: 20px 32px;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--ng-text-sec);
+    border-bottom: 1px solid var(--ng-border);
+}
+
+.premium-table tbody tr {
+    transition: all 0.2s ease;
+    background: transparent;
+}
+
+.premium-table tbody tr:hover td {
+    background: rgba(88, 101, 242, 0.02);
+}
+
+.premium-table td {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--ng-border);
+    vertical-align: middle;
+    transition: background 0.2s ease;
+}
+
+.premium-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==================== CELLS & COMPONENTS ==================== */
+
+/* Avatar */
+.resource-cell {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.avatar-wrapper {
+    position: relative;
+    width: 48px;
+    height: 48px;
+}
+
+.resource-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--ng-primary-dark), var(--ng-primary));
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 16px rgba(88, 101, 242, 0.2);
+    position: relative;
+    z-index: 2;
+}
+
+.avatar-wrapper::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(88, 101, 242, 0.4), transparent);
+    z-index: 1;
+    opacity: 0.5;
+}
+
+.resource-info .name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ng-text-main);
+    display: block;
+}
+
+.resource-info .id {
+    font-size: 12px;
+    color: var(--ng-text-sec);
+    display: block;
+    margin-top: 2px;
+}
+
+/* Ring Progress for OTD Score */
+.ring-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-ring-circle {
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ring-value {
+    position: absolute;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--ng-text-main);
+}
+
+/* Task Metrics */
+.metric-box {
+    text-align: center;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: rgba(248, 250, 251, 0.5);
+    display: inline-block;
+    min-width: 80px;
+}
+
+.metric-number {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ng-primary-dark);
+    display: block;
+}
+
+.metric-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ng-text-sec);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Glass Badge (Priority) */
+.glass-badge {
+    display: inline-flex;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    align-items: center;
+    gap: 6px;
+    backdrop-filter: blur(4px);
+    border: 1px solid transparent;
+}
+
+.glass-badge.red {
+    background: rgba(218, 55, 60, 0.1);
+    color: var(--ng-error);
+    border-color: rgba(218, 55, 60, 0.2);
+}
+
+.glass-badge.empty {
+    color: var(--ng-text-sec);
+    background: rgba(0, 0, 0, 0.03);
+}
+
+/* Hours Pill */
+.hours-pill {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-block;
+    transition: all 0.3s;
+}
+
+.hours-pill.heavy {
+    background: linear-gradient(90deg, #FFF1F0, #FFF);
+    color: var(--ng-error);
+    border: 1px solid rgba(218, 55, 60, 0.2);
+    box-shadow: 0 4px 12px rgba(218, 55, 60, 0.1);
+}
+
+.hours-pill.normal {
+    background: white;
+    color: var(--ng-text-main);
+    border: 1px solid var(--ng-border);
+}
+
+/* Status Dot Pill */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    background: white;
+    border: 1px solid var(--ng-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ddd;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 1);
+    position: relative;
+}
+
+.status-dot::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    opacity: 0.6;
+}
+
+.status-pill.success .status-dot {
+    background-color: var(--ng-success);
+}
+
+.status-pill.success .status-dot::after {
+    background-color: var(--ng-success);
+}
+
+.status-pill.success {
+    color: #107c41;
+    background: #F6FFFA;
+}
+
+.status-pill.warning .status-dot {
+    background-color: var(--ng-warning);
+}
+
+.status-pill.warning .status-dot::after {
+    background-color: var(--ng-warning);
+}
+
+.status-pill.warning {
+    color: #b4831f;
+    background: #FFFCF5;
+}
+
+.status-pill.error .status-dot {
+    background-color: var(--ng-error);
+}
+
+.status-pill.error .status-dot::after {
+    background-color: var(--ng-error);
+}
+
+.status-pill.error {
+    color: #c52227;
+    background: #FFF5F5;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* Animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-row {
+    animation: slideInUp 0.4s ease-out forwards;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+
+    .premium-table td,
+    .premium-table th {
+        padding: 16px;
+    }
+
+    .metric-box {
+        min-width: auto;
+    }
+}
+
+/* =========================================
+   NEXT-GEN METRICS CARDS (Ultra Premium)
+   ========================================= */
+
+/* =========================================
+   NEXT-GEN METRICS CARDS (Ultra Premium)
+   ========================================= */
+
+.ng-metric-card {
+    /* Multi-layered Glass Effect */
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.45) 100%);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+
+    /* Diamond-cut Border */
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-top: 1px solid rgba(255, 255, 255, 1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+
+    /* Deep Ambient Shadow */
+    box-shadow:
+        0 15px 35px -5px rgba(0, 0, 0, 0.08),
+        0 5px 15px -5px rgba(0, 0, 0, 0.04),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+
+    border-radius: 28px;
+    padding: 32px;
+    height: 100%;
+    min-height: 220px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Ambient Glow Blob */
+.ng-metric-card::after {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, var(--rumbo-primary) 0%, transparent 70%);
+    opacity: 0.08;
+    filter: blur(40px);
+    transition: opacity 0.5s ease;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.ng-metric-card:hover {
+    transform: translateY(-8px) scale(1.01);
+    box-shadow:
+        0 25px 50px -12px rgba(88, 101, 242, 0.15),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 100%);
+}
+
+.ng-metric-card:hover::after {
+    opacity: 0.15;
+}
+
+/* Accent Top Line */
+.ng-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 24px;
+    right: 24px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--rumbo-primary), transparent);
+    opacity: 0;
+    transform: scaleX(0.5);
+    transition: all 0.5s ease;
+    border-radius: 0 0 4px 4px;
+}
+
+.ng-metric-card:hover::before {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+/* Metric Title */
+.ng-metric-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1;
+}
+
+.ng-metric-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f0f3fa 0%, #ffffff 100%);
+    box-shadow:
+        5px 5px 10px #e1e4eb,
+        -5px -5px 10px #ffffff;
+    color: var(--rumbo-primary);
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+.ng-metric-card:hover .ng-metric-icon {
+    transform: rotate(-10deg) scale(1.1);
+    color: #4b55e3;
+}
+
+/* Big Value with Rich Gradient */
+.ng-metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 0.9;
+    /* Deep Rich Gradient */
+    background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #64748b 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.04em;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+    position: relative;
+    z-index: 1;
+}
+
+.ng-metric-subtext {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: #94a3b8;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1;
+}
+
+/* Sparkline Container */
+.ng-sparkline {
+    width: 100%;
+    height: 60px;
+    margin-top: auto;
+    position: relative;
+    opacity: 0.9;
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+/* OTD Ring Container */
+.ng-ring-container {
+    width: 110px;
+    height: 110px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.06));
+}
+
+.ng-ring-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #e2e8f0;
+    opacity: 0.3;
+}
+
+.ng-ring-center {
+    position: absolute;
+    width: 76%;
+    height: 76%;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow:
+        inset 0 4px 8px rgba(0, 0, 0, 0.02),
+        0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Focus Badges */
+.ng-focus-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: auto;
+    z-index: 1;
+}
+
+.ng-focus-stat {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.ng-focus-stat::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(88, 101, 242, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.ng-focus-stat:hover {
+    background: #fff;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 10px 20px -5px rgba(88, 101, 242, 0.15);
+    border-color: var(--ng-primary);
+}
+
+.ng-focus-stat:hover::before {
+    opacity: 1;
+}

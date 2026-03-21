@@ -31,7 +31,9 @@ class TaskBase(BaseModel):
     estimated_hours: float = 0.0
     start_date: Optional[datetime] = None
     due_date: Optional[datetime] = None
+    due_date: Optional[datetime] = None
     tags: List[str] = []
+    progress: float = 0.0  # Percentage 0-100
 
 class TaskCreate(TaskBase):
     pass

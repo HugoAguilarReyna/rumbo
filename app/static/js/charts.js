@@ -47,6 +47,9 @@ const UI_THEME = {
     }
 };
 
+// 🌍 EXPOSE THEME GLOBALLY
+window.UI_THEME = UI_THEME;
+
 // 🎨 THEME CONFIG (Legacy Compat)
 const THEME = {
     light: { bg: '#fff', grid: UI_THEME.palette.grid_light, text: UI_THEME.palette.text_light, today: UI_THEME.palette.blocked },
@@ -87,6 +90,7 @@ const throttle = (fn, ms) => { let last = 0; return (...args) => { const now = D
 // ==========================================
 // 🎯 GANTT RENDERER (Split-Pane Architecture)
 // ==========================================
+window.renderGanttChart = renderGanttChart;
 function renderGanttChart(data) {
     if (data?.length > 0) {
         // ALWAYS update global data and filters if data is provided

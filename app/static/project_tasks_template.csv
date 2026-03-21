@@ -1,6 +1,7 @@
-Project,Title,Status,Priority,Assigned To,Due Date,Estimated Hours,Description
-Dashboard Redesign,Implement Dark Mode,IN_PROGRESS,HIGH,Alice,2026-02-01,8,Add dark mode toggles and CSS variables
-Dashboard Redesign,Update User Profile,PENDING,MEDIUM,Bob,2026-02-05,4,Allow users to update avatar
-API V2,Design Database Schema,COMPLETED,CRITICAL,Charlie,2026-01-20,12,Schema design for new microservices
-API V2,Setup Auth Middleware,IN_PROGRESS,HIGH,Alice,2026-02-10,6,JWT implementation
-Mobile App,Splash Screen,PENDING,LOW,Bob,2026-02-15,2,Animated splash screen
+Title,Description,Status,Priority,Assigned To,Estimated Hours,Start Date,Due Date,Project,Tags
+Diseño de Base de Datos,Definir esquemas y relaciones de colecciones MongoDB,COMPLETED,HIGH,Ana García,8,2024-01-10,2024-01-15,Proyecto Alpha,backend database
+Desarrollo de API REST,Implementar endpoints CRUD con FastAPI y autenticación JWT,IN_PROGRESS,HIGH,Luis Martínez,16,2024-01-16,2024-01-30,Proyecto Alpha,backend api
+Diseño UI Dashboard,Crear wireframes y componentes visuales del panel principal,PENDING,MEDIUM,Sara López,12,2024-01-20,2024-02-05,Proyecto Alpha,frontend design
+Pruebas de Integración,Escribir tests para endpoints críticos y flujos de usuario,PENDING,HIGH,Carlos Ruiz,6,2024-02-01,2024-02-10,Proyecto Alpha,testing qa
+Despliegue en Producción,Configurar servidor Render y variables de entorno,PENDING,CRITICAL,Ana García,4,2024-02-10,2024-02-12,Proyecto Alpha,devops deployment
+Documentación API,Documentar endpoints con Swagger/OpenAPI y guía de inicio,PENDING,LOW,Luis Martínez,5,2024-02-05,2024-02-15,Proyecto Alpha,docs

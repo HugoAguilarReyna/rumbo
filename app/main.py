@@ -1,19 +1,23 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.core import config, database
-from app.routers import auth, users, tasks, analytics
+from app.routers import auth, users, tasks, analytics, talents
 from datetime import datetime
 import traceback
 from app.core.database import get_database
 
 
 
-app = FastAPI(title="Antigravity PM Dashboard", version="1.0.0")
+app = FastAPI(title="RUMBO Dashboard", version="1.0.0")
 
 # CORS
-origins = ["*"]
+origins = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:3000"
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -87,7 +91,7 @@ async def shutdown_db_client():
 # Include Routers
 # Note: Import at top handled via string if lazy, but here we need imports.
 # We need to import them first.
-from app.routers import notes, files, notifications
+from app.routers import notes, files, notifications, audit, projects, talents
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
@@ -98,6 +102,9 @@ app.include_router(analytics.router, prefix="/api")
 app.include_router(notes.router) # Prefix defined in router
 app.include_router(files.router) # Prefix defined in router
 app.include_router(notifications.router, prefix="/api")
+app.include_router(audit.router, prefix="/api") # Prefix defined in router as /audit, so result is /api/audit
+app.include_router(projects.router, prefix="/api")
+app.include_router(talents.router, prefix="/api")
 
 # Static Files (for local testing without Nginx, though Nginx is preferred)
 # In production content, Nginx handles / but for debugging we can mount it too
@@ -137,3 +144,7 @@ async def health_check():
             "traceback": traceback.format_exc()
         }
 
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/static/pages/index.html")

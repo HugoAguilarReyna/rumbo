@@ -25,7 +25,11 @@ async def ingest_csv(file_content: bytes, owner_id: str):
         # (Simplified for now, assuming standard CSV or using previous logic if robust)
         # Using standard csv reader for now as it's cleaner
         
-        reader = csv.DictReader(io.StringIO(content_str))
+        try:
+            dialect = csv.Sniffer().sniff(content_str[:2048])
+            reader = csv.DictReader(io.StringIO(content_str), dialect=dialect)
+        except Exception as e:
+            reader = csv.DictReader(io.StringIO(content_str))
         
         # Normalize headers
         if reader.fieldnames:

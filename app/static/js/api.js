@@ -77,4 +77,32 @@ class ApiClient {
             body: data instanceof FormData ? data : JSON.stringify(data)
         });
     }
+
+    static async put(endpoint, data) {
+        return this.request(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
+    static async patch(endpoint, data) {
+        return this.request(endpoint, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        });
+    }
+
+    static async delete(endpoint) {
+        return this.request(endpoint, { method: 'DELETE' });
+    }
 }
+
+// ES6 Module Exports
+export { API_BASE, ApiClient };
+export default ApiClient;
+
+// También exponerlos globalmente para scripts que no son módulos ES6
+// Esto permite que dashboard.js, scoreboard.js, etc. accedan a ApiClient
+window.API_BASE = API_BASE;
+window.ApiClient = ApiClient;
+

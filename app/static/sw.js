@@ -1,4 +1,4 @@
-const CACHE_NAME = 'projecthub-v1.0.0';
+const CACHE_NAME = 'rumbo-v1.0.0';
 const urlsToCache = [
     '/',
     '/static/pages/index.html',

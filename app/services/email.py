@@ -20,7 +20,8 @@ async def send_email(subject: str, recipients: list, body: str):
             port=settings.SMTP_PORT,
             username=settings.SMTP_USER,
             password=settings.SMTP_PASSWORD,
-            use_tls=True
+            use_tls=True,
+            timeout=10.0
         )
     except Exception as e:
         print(f"Failed to send email: {e}")

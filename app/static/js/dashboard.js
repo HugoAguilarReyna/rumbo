@@ -14,6 +14,9 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('💥 Unhandled Promise Rejection:', event.reason);
 });
 
+// Track the currently active tab for refresh logic
+let activeTabId = '#overview';
+
 // Main Dashboard Logic
 let currentProjectId = "ALL";
 
@@ -87,21 +90,57 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tab Event Listeners
     const triggerTabList = document.querySelectorAll('button[data-bs-toggle="tab"]');
     console.log(`🔍 Found ${triggerTabList.length} tab buttons.`);
+
     triggerTabList.forEach(triggerEl => {
         triggerEl.addEventListener('shown.bs.tab', event => {
             const targetId = event.target.getAttribute('data-bs-target');
             console.log(`🎯 Tab Switched to: ${targetId}`);
+            activeTabId = targetId; // Update global tracker
+
             if (targetId === '#tasks') loadTasksList(currentProjectId);
             if (targetId === '#capacity') loadCapacityWidget(currentProjectId);
             if (targetId === '#tracking') { loadTasksForDropdown(); loadRecentActivity(); }
             if (targetId === '#timeline' && window.loadGantt) { window.loadGantt(currentProjectId); }
-            if (targetId === '#scoreboard' && window.renderProjectScoreboard) { window.renderProjectScoreboard(); }
+            if (targetId === '#scoreboard') {
+                loadProjectOverview();
+                loadProjectBoard();
+            }
+            if (targetId === '#overview' || targetId === '#resumen') {
+                // Reload dashboard data when returning to summary to fix any initial load failures
+                loadDashboard();
+            }
+
+            // Initial load for management tabs if they are active
+            if (targetId === '#management') {
+                // Default to projects tab inside management
+                loadProjectsTable();
+            }
         });
     });
 });
 
-function refreshDashboard() {
-    loadDashboard();
+async function refreshDashboard() {
+    console.log(`🔄 Refreshing Dashboard... Active Tab: ${activeTabId}`);
+
+    // Always load core data
+    await loadDashboard();
+
+    // Load data specific to the active tab
+    if (activeTabId === '#scoreboard') {
+        await loadProjectOverview();
+        await loadProjectBoard();
+    } else if (activeTabId === '#capacity') {
+        await loadCapacityWidget(currentProjectId);
+    } else if (activeTabId === '#timeline' && window.loadGantt) {
+        await window.loadGantt(currentProjectId);
+    } else if (activeTabId === '#tracking') {
+        await loadRecentActivity();
+    } else if (activeTabId === '#management') {
+        // Refresh both tables to be safe, or check active sub-tab
+        await loadProjectsTable();
+        await loadUsersTable();
+    }
+
     showToast('Dashboard refreshed', 'info');
 }
 
@@ -111,6 +150,7 @@ async function loadDashboard() {
         // Default: Load Metrics & Tasks for Overview
         await loadMetrics(currentProjectId);
         await loadCharts(currentProjectId);
+        if (window.loadDummyKPIs) window.loadDummyKPIs(); // Load Dummy KPIs
         await loadTasksList(currentProjectId); // LOAD TASKS ON STARTUP
         console.log("✅ Dashboard Data Loaded Successfully");
     } catch (error) {
@@ -196,7 +236,10 @@ async function loadCharts(projectId) {
             const projectMap = {};
             if (projectsResponse.ok) {
                 const projects = await projectsResponse.json();
-                projects.forEach(p => projectMap[p.id] = p.name);
+                projects.forEach(p => {
+                    const pid = p.id || p._id;
+                    if (pid) projectMap[pid] = p.name;
+                });
             }
 
             // Call renderers (Pass Map)
@@ -211,15 +254,38 @@ async function loadCharts(projectId) {
 async function loadTasksList(projectId) {
     console.log(`📡 Fetching Tasks for project: ${projectId}`);
     const container = document.getElementById('tasks-container');
+    let tasks = null; // Debug scope
 
     try {
         let url = '/tasks/';
         if (projectId && projectId !== 'ALL') url += `?project_id=${projectId}`;
 
-        const response = await ApiClient.get(url);
-        if (response.ok) {
-            const tasks = await response.json();
+        // Fetch Tasks and Projects in parallel
+        // Use /projects/ endpoint which is more reliable than /analytics/projects
+        const [tasksResponse, projectsResponse] = await Promise.all([
+            ApiClient.get(url),
+            ApiClient.get('/projects/')
+        ]);
+
+        if (tasksResponse.ok) {
+            const tasks = await tasksResponse.json();
+
+            // Build Project Map
+            const projectMap = {};
+            if (projectsResponse.ok) {
+                const projects = await projectsResponse.json();
+                projects.forEach(p => {
+                    const pid = p.id || p._id;
+                    if (pid) projectMap[pid] = p.name;
+                });
+            }
+
             console.log(`📋 Tasks Received: ${tasks.length} tasks found.`);
+
+            if (!Array.isArray(tasks)) {
+                console.error("Tasks is not an array:", tasks);
+                throw new Error("Invalid format");
+            }
 
             // Render to main container if it exists (legacy)
             if (container) {
@@ -228,7 +294,7 @@ async function loadTasksList(projectId) {
                 } else {
                     container.innerHTML = tasks.slice(0, 5).map(task => `
                         <div class="p-4 border border-gray-100 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer flex justify-between items-center group"
-                             onclick="openTaskDetail('${task.id}')">
+                             onclick="openTaskDetail('${task.id || task._id}')">
                             <div>
                                 <div class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary transition-colors">
                                     ${task.title}
@@ -248,10 +314,21 @@ async function loadTasksList(projectId) {
 
             // ALWAYS Render the new critical task lists (Overdue / Upcoming)
             renderCriticalTaskLists(tasks);
+
+            // Render Summary Cards with Project Names
+            renderTaskSummaries(tasks, projectMap);
         }
     } catch (e) {
         console.error("Tasks Load Error", e);
-        if (container) container.innerHTML = `<div class="text-center text-red-500">Error loading tasks</div>`;
+        const errorMsg = `<div class="text-center text-red-500 py-4">Error al cargar tareas: ${e.message}</div>`;
+
+        if (container) container.innerHTML = errorMsg;
+
+        // Update critical lists to show error too
+        const overdueContainer = document.getElementById('overdue-tasks-list');
+        const upcomingContainer = document.getElementById('upcoming-tasks-list');
+        if (overdueContainer) overdueContainer.innerHTML = errorMsg;
+        if (upcomingContainer) upcomingContainer.innerHTML = errorMsg;
     }
 }
 
@@ -300,12 +377,97 @@ function renderCriticalTaskLists(tasks) {
     });
 
     // 3. Render
-    renderTaskCards(overdueContainer, overdueTasks, 'overdue');
-    renderTaskCards(upcomingContainer, upcomingTasks, 'upcoming');
+    renderDashboardTaskCards(overdueContainer, overdueTasks, 'overdue');
+    renderDashboardTaskCards(upcomingContainer, upcomingTasks, 'upcoming');
+}
+
+// 🚀 NEW SUMMARY CARDS RENDERING
+function renderTaskSummaries(tasks, projectMap = {}) {
+    if (!tasks) return;
+
+    // 1. Status Stats
+    const statusCounts = tasks.reduce((acc, t) => {
+        acc[t.status] = (acc[t.status] || 0) + 1;
+        return acc;
+    }, {});
+
+    // Sort statuses by count desc
+    const sortedStatuses = Object.entries(statusCounts).sort((a, b) => b[1] - a[1]);
+
+    const statusContainer = document.getElementById('summary-status-container');
+    if (statusContainer) {
+        if (sortedStatuses.length === 0) {
+            statusContainer.innerHTML = '<div class="text-center text-muted py-2">Sin datos</div>';
+        } else {
+            statusContainer.innerHTML = sortedStatuses.map(([status, count]) => `
+                <div class="d-flex justify-content-center align-items-center mb-2 gap-3" style="max-width: 250px; margin: 0 auto;">
+                    <span class="badge" style="background-color: ${getStatusColor(status)}; color: #fff; min-width: 100px;">${status.replace(/_/g, ' ')}</span>
+                    <span class="font-bold" style="min-width: 30px; text-align: left;">${count}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    // 2. Project Stats (Group by project_id for now, ideally project_name if available)
+    // We need to fetch project names or use ID. dashboard.js should have access to project list?
+    // Let's assume tasks have 'project_name' or we use ID. 
+    // Checking previous 'loadTasksList', the task object likely has project_id but maybe not name.
+    // However, `renderProjectCharts` in `dashboard.js` uses `projectMap` if available.
+    // Let's see if we can access `window.projectMap` or similar. If not, use ID.
+
+    const projectCounts = tasks.reduce((acc, t) => {
+        const id = t.project_id || 'Unknown';
+        acc[id] = (acc[id] || 0) + 1;
+        return acc;
+    }, {});
+
+    const sortedProjects = Object.entries(projectCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    const projectContainer = document.getElementById('summary-project-container');
+    if (projectContainer) {
+        if (sortedProjects.length === 0) {
+            projectContainer.innerHTML = '<div class="text-center text-muted py-2">Sin datos</div>';
+        } else {
+            projectContainer.innerHTML = sortedProjects.map(([id, count]) => {
+                const name = projectMap[id] || id; // Use Name if available, else ID
+                return `
+                <div class="d-flex justify-content-center align-items-center mb-2 border-bottom pb-1 gap-3" style="max-width: 280px; margin: 0 auto;">
+                    <span class="text-sm text-truncate" style="max-width: 150px; flex: 1; text-align: left;" title="${name}">${name}</span>
+                    <span class="badge bg-light text-dark border" style="min-width: 40px; text-align: center;">${count}</span>
+                </div>
+            `}).join('');
+        }
+    }
+
+    // 3. Talent Stats
+    const talentCounts = tasks.reduce((acc, t) => {
+        const name = t.assigned_to || 'Unassigned';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+    }, {});
+
+    const sortedTalent = Object.entries(talentCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    const talentContainer = document.getElementById('summary-talent-container');
+    if (talentContainer) {
+        if (sortedTalent.length === 0) {
+            talentContainer.innerHTML = '<div class="text-center text-muted py-2">Sin datos</div>';
+        } else {
+            talentContainer.innerHTML = sortedTalent.map(([name, count]) => `
+                <div class="d-flex justify-content-center align-items-center mb-2 gap-3" style="max-width: 280px; margin: 0 auto;">
+                    <div class="d-flex align-items-center gap-2" style="flex: 1; min-width: 0;">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width:24px; height:24px; font-size: 10px;">${name.charAt(0)}</div>
+                        <span class="text-sm text-truncate">${name}</span>
+                    </div>
+                    <span class="font-bold text-primary" style="min-width: 40px; text-align: right;">${count}</span>
+                </div>
+            `).join('');
+        }
+    }
 }
 
 // 🚀 UNIFIED RENDER FUNCTION (RESTORED)
-function renderTaskCards(containerOrId, tasks, type) {
+function renderDashboardTaskCards(containerOrId, tasks, type) {
     const container = typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId;
     if (!container) return;
     container.innerHTML = '';
@@ -331,12 +493,16 @@ function renderTaskCards(containerOrId, tasks, type) {
         const badgeColor = isOverdue ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800';
         const labelText = isOverdue ? 'EXPIRADO' : 'PRÓXIMO';
 
-        // Clean Card HTML - No Drawer OnClick
+        // Card HTML - Now with Edit Trigger
         const cardHtml = `
-            <div class="glass-card mb-3 p-3 ${borderColor} shadow-sm hover:shadow-md transition bg-white dark:bg-gray-800">
+            <div class="glass-card mb-3 p-3 ${borderColor} shadow-sm hover:shadow-md transition bg-white dark:bg-gray-800 cursor-pointer" 
+                 onclick="openTaskDetail('${task.id || task._id}')">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="flex-grow-1 overflow-hidden">
-                        <h5 class="fw-bold mb-1 text-truncate" style="font-size: 0.95rem;">${task.title || 'Sin título'}</h5>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                             <h5 class="fw-bold mb-0 text-truncate" style="font-size: 0.95rem;">${task.title || 'Sin título'}</h5>
+                             <i class="bi bi-pencil-square text-muted opacity-50" style="font-size: 0.8rem;"></i>
+                        </div>
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge ${badgeColor} rounded-pill" style="font-size: 0.65rem;">${labelText}</span>
                             <small class="text-muted">👤 ${task.assigned_to || 'Unassigned'}</small>
@@ -429,47 +595,7 @@ async function loadCapacityWidget(projectId) {
 // ========================================
 // CSV UPLOAD LOGIC
 // ========================================
-async function uploadCSV() {
-    const input = document.getElementById('csv-upload-input');
-    if (!input || !input.files || input.files.length === 0) {
-        showToast('Please select a CSV file first', 'warning');
-        return;
-    }
-
-    const file = input.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const btn = document.querySelector('button[onclick="uploadCSV()"]');
-    const originalText = btn.textContent;
-    btn.textContent = 'Uploading...';
-    btn.disabled = true;
-
-    try {
-        const response = await ApiClient.post('/tasks/upload-csv', formData);
-
-        if (response.ok) {
-            const result = await response.json();
-            showToast(`Success! Imported ${result.inserted} tasks.`, 'success');
-
-            // Clear input
-            input.value = '';
-            document.getElementById('file-name').textContent = 'Select File';
-
-            // Refresh data
-            refreshDashboard();
-        } else {
-            const err = await response.json();
-            showToast(err.detail || 'Upload failed', 'error');
-        }
-    } catch (e) {
-        console.error(e);
-        showToast('Upload error occurred', 'error');
-    } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
-    }
-}
+// Function implementation is located at the bottom of the file (Line ~1700).
 
 // ========================================
 // API CLIENT WRAPPER (Simple)
@@ -478,50 +604,20 @@ async function uploadCSV() {
 
 
 function toggleTaskModal() {
-    const modalEl = document.getElementById('addTaskModal');
-    if (modalEl) {
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
-    }
+    if (window.openTaskModal) window.openTaskModal();
 }
-
-// 🚀 MASTER-DETAIL DRAWER LOGIC
-let currentDrawerTaskId = null;
 
 async function openTaskDetail(taskId) {
-    currentDrawerTaskId = taskId;
-
-    const drawer = document.getElementById('task-drawer');
-    const backdrop = document.getElementById('drawer-backdrop');
-    const content = document.getElementById('drawer-content');
-
-    if (!drawer || !backdrop || !content) return;
-
-    // Show Drawer
-    drawer.classList.add('active');
-    backdrop.classList.add('active');
-
-    // Show Loading
-    content.innerHTML = `
-        <div class="d-flex flex-column align-items-center justify-content-center h-100 py-5">
-            <div class="spinner-border text-primary mb-3" role="status"></div>
-            <p class="text-muted">Loading details...</p>
-        </div>
-    `;
-
-    try {
-        const response = await ApiClient.get(`/tasks/${taskId}`);
-        if (response.ok) {
-            const task = await response.json();
-            renderDrawerContent(task);
-        } else {
-            content.innerHTML = `<div class="alert alert-danger">Failed to load task details.</div>`;
-        }
-    } catch (e) {
-        console.error("Drawer Load Error", e);
-        content.innerHTML = `<div class="alert alert-danger">Error connecting to server.</div>`;
+    if (window.openTaskModal) {
+        window.openTaskModal(taskId);
+    } else {
+        console.warn('openTaskModal not found, falling back to legacy drawer');
+        // Legacy fallback logic if needed...
     }
 }
+
+// 🚀 MASTER-DETAIL DRAWER LOGIC (LEGACY - REDIRECTED ABOVE)
+let currentDrawerTaskId = null;
 
 function closeTaskDrawer() {
     const drawer = document.getElementById('task-drawer');
@@ -536,6 +632,7 @@ function renderDrawerContent(task) {
 
     // Format Date for Input (YYYY-MM-DD)
     const dueDateVal = task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : '';
+    const projectId = task.project_id || '';
 
     content.innerHTML = `
         <div class="mb-4">
@@ -555,6 +652,14 @@ function renderDrawerContent(task) {
             </select>
         </div>
 
+        <div class="mb-4">
+             <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Project</label>
+             <select id="drawer-project" class="form-select bg-gray-50 border-0">
+                 <option value="">No Project</option>
+                 <!-- Populated by JS -->
+             </select>
+        </div>
+
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div>
                 <label class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Due Date</label>
@@ -571,6 +676,30 @@ function renderDrawerContent(task) {
             <textarea id="drawer-desc" class="form-control bg-gray-50 border-0" rows="5" placeholder="Add details...">${task.description || ''}</textarea>
         </div>
     `;
+
+    // Trigger project load
+    loadProjectOptions(projectId);
+}
+
+async function loadProjectOptions(selectedId) {
+    const select = document.getElementById('drawer-project');
+    if (!select) return;
+
+    try {
+        const res = await ApiClient.get('/projects/'); // Use cached list if possible? Fetching is safer for now.
+        if (res.ok) {
+            const projects = await res.json();
+            projects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id || p._id;
+                opt.textContent = p.name;
+                if (opt.value === selectedId) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error("Failed to load projects for drawer", e);
+    }
 }
 
 async function saveTaskDetails() {
@@ -584,9 +713,10 @@ async function saveTaskDetails() {
     const payload = {
         title: document.getElementById('drawer-title').value,
         status: document.getElementById('drawer-status').value,
-        due_date: document.getElementById('drawer-date').value || null, // Handle empty date
+        due_date: document.getElementById('drawer-date').value || null,
         assignee: document.getElementById('drawer-assignee').value,
-        description: document.getElementById('drawer-desc').value
+        description: document.getElementById('drawer-desc').value,
+        project_id: document.getElementById('drawer-project').value || null
     };
 
     try {
@@ -859,27 +989,783 @@ window.loadGantt = loadGantt;
 // INITIALIZATION
 // ========================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Check auth if needed (placeholder)
-    const token = localStorage.getItem('access_token');
-    if (!token && window.location.pathname !== '/static/pages/login.html') {
-        // window.location.href = '/static/pages/login.html'; 
+// Duplicate initialization block removed
+
+
+
+// ========================================
+// REPORTING & EXPORT
+// ========================================
+
+function exportReport() {
+    console.log("📄 Exporting Report...");
+    // Future: Call backend /analytics/export endpoint
+    // For now, simple toast
+    showToast('Exportando reporte CSV...', 'info');
+
+    // Simulate delay
+    setTimeout(() => {
+        showToast('Reporte exportado exitosamente (Simulacion)', 'success');
+    }, 1500);
+}
+
+function generatePDF() {
+    console.log("🖨️ Generating PDF...");
+    showToast('Generando PDF...', 'info');
+
+    const element = document.getElementById('overview'); // Target the Main Dashboard Tab
+
+    if (!element) {
+        showToast('No se encontró contenido para exportar', 'error');
+        return;
     }
 
-    loadDashboard();
+    const opt = {
+        margin: 0.5,
+        filename: 'Rumbo_Dashboard.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+    };
 
-    // Tab Event Listeners
-    const triggerTabList = document.querySelectorAll('button[data-bs-toggle="tab"]');
-    triggerTabList.forEach(triggerEl => {
-        triggerEl.addEventListener('shown.bs.tab', event => {
-            const targetId = event.target.getAttribute('data-bs-target');
-            if (targetId === '#tasks') loadTasksList(currentProjectId);
-            if (targetId === '#capacity') loadCapacityWidget(currentProjectId);
-            if (targetId === '#tracking') { loadTasksForDropdown(); loadRecentActivity(); }
-            if (targetId === '#timeline' && window.loadGantt) { window.loadGantt(currentProjectId); }
-            if (targetId === '#scoreboard' && window.renderProjectScoreboard) { window.renderProjectScoreboard(); }
+    // Use html2pdf if available (It is included in index.html)
+    if (window.html2pdf) {
+        html2pdf().set(opt).from(element).save().then(() => {
+            showToast('PDF Descargado', 'success');
+        }).catch(err => {
+            console.error(err);
+            showToast('Error al generar PDF', 'error');
+        });
+    } else {
+        alert('Librería PDF no cargada. Por favor recarga la página.');
+    }
+}
+
+// Global Expose
+window.exportReport = exportReport;
+window.generatePDF = generatePDF;
+
+// ========================================
+// DUMMY KPI LOADER (User Request)
+// ========================================
+window.loadDummyKPIs = function () {
+    console.log("📊 Loading Dummy KPI Data...");
+
+    // 1. Utilization
+    const utilEl = document.getElementById('utilization-kpi');
+    if (utilEl) utilEl.innerText = "84.5%";
+
+    // 2. CPI
+    const cpiEl = document.getElementById('kpi-cpi-value');
+    if (cpiEl) cpiEl.innerText = "0.94";
+    const cpiStatus = document.getElementById('kpi-cpi-status');
+    if (cpiStatus) cpiStatus.innerHTML = 'At Risk (< 1.0)';
+
+    // 3. EAC
+    const eacEl = document.getElementById('kpi-eac-value');
+    if (eacEl) eacEl.innerText = "$111,696";
+
+    // 4. SPI
+    const spiEl = document.getElementById('kpi-spi-value');
+    if (spiEl) spiEl.innerText = "0.88";
+    const spiStatus = document.getElementById('kpi-spi-status');
+    if (spiStatus) spiStatus.innerText = "Retrasado";
+    const spiDelay = document.getElementById('kpi-spi-delay');
+    if (spiDelay) spiDelay.innerText = "12.4 días";
+
+    // 5. Cycle Time
+    const cycleEl = document.getElementById('kpi-cycle-value');
+    if (cycleEl) cycleEl.innerText = "5.2";
+
+    // 6. Flow Efficiency
+    const flowEl = document.getElementById('kpi-flow-value');
+    if (flowEl) flowEl.innerText = "24%";
+};
+
+// Global Exports for Talent Tab / Super View
+window.loadCapacityWidget = loadCapacityWidget;
+window.loadRecentActivity = loadRecentActivity;
+
+
+// ========================================
+// MANAGEMENT LOGIC (Projects & Users)
+// ========================================
+
+// 1. PROJECTS MANAGEMENT
+async function loadProjectsTable() {
+    console.log("Loading projects table...");
+    const tbody = document.getElementById('projects-table-body');
+    if (!tbody) { console.warn("No projects table body found"); return; }
+
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Cargando...</td></tr>';
+
+    try {
+        const res = await ApiClient.get('/projects/');
+        if (res.ok) {
+            const projects = await res.json();
+            if (projects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No hay proyectos.</td></tr>';
+            } else {
+                tbody.innerHTML = projects.map(p => `
+                    <tr>
+                        <td class="font-weight-bold">${p.name}</td>
+                        <td class="text-muted small">${p.description || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="editProject('${p.id || p._id}')">Editar</button>
+                            <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1" onclick="deleteProject('${p.id || p._id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } else {
+            throw new Error("Failed to fetch projects");
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error al cargar proyectos</td></tr>';
+        console.error(e);
+    }
+}
+
+// Global scope for onclick handlers
+window.openProjectForm = function (project = null) {
+    document.getElementById('project-form-container').classList.remove('d-none');
+
+    if (project) {
+        document.getElementById('project-form-title').textContent = 'Editar Proyecto';
+        document.getElementById('project-id').value = project.id || project._id;
+        document.getElementById('project-name').value = project.name;
+        document.getElementById('project-desc').value = project.description || '';
+    } else {
+        document.getElementById('project-form-title').textContent = 'Nuevo Proyecto';
+        document.getElementById('project-id').value = '';
+        document.getElementById('project-form').reset();
+    }
+}
+
+window.closeProjectForm = function () {
+    document.getElementById('project-form-container').classList.add('d-none');
+}
+
+window.editProject = async function (id) {
+    try {
+        const res = await ApiClient.get('/projects/');
+        if (res.ok) {
+            const projects = await res.json();
+            const project = projects.find(p => (p.id || p._id) === id);
+            if (project) openProjectForm(project);
+        }
+    } catch (e) {
+        showToast('Error cargando proyecto', 'error');
+    }
+}
+
+window.saveProject = async function () {
+    const id = document.getElementById('project-id').value;
+    const name = document.getElementById('project-name').value;
+    const desc = document.getElementById('project-desc').value;
+
+    const payload = { name, description: desc };
+
+    try {
+        let res;
+        if (id) {
+            res = await ApiClient.patch(`/projects/${id}`, payload);
+        } else {
+            res = await ApiClient.post('/projects/', payload);
+        }
+
+        if (res.ok) {
+            showToast('Proyecto guardado', 'success');
+            closeProjectForm();
+            loadProjectsTable();
+            // Refresh main dashboard lists if needed
+            refreshDashboard();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Error al guardar', 'error');
+        }
+    } catch (e) {
+        showToast('Error de conexión', 'error');
+    }
+}
+
+window.deleteProject = async function (id) {
+    if (!confirm('¿Estás seguro de eliminar este proyecto? Las tareas asociadas se desvincularán.')) return;
+
+    try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`/api/projects/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            showToast('Proyecto eliminado', 'success');
+            loadProjectsTable();
+            refreshDashboard();
+        } else {
+            showToast('Error al eliminar', 'error');
+        }
+    } catch (e) {
+        showToast('Error de conexión', 'error');
+    }
+}
+
+
+// 2. USERS MANAGEMENT
+async function loadUsersTable() {
+    const tbody = document.getElementById('users-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
+
+    try {
+        const res = await ApiClient.get('/users/');
+        if (res.ok) {
+            const users = await res.json();
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                             <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:24px; height:24px; font-size: 10px;">${(u.username || 'U').charAt(0).toUpperCase()}</div>
+                             ${u.username}
+                        </div>
+                    </td>
+                    <td class="text-muted small">${u.email}</td>
+                    <td><span class="badge bg-light text-dark border">${u.role}</span></td>
+                    <td class="text-center">${u.daily_capacity} / ${u.weekly_capacity}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary py-0 px-2" onclick="editUser('${u.id || u._id}')">Editar</button>
+                         <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-1" onclick="deleteUser('${u.id || u._id}')">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar usuarios</td></tr>';
+        console.error(e);
+    }
+}
+
+window.openUserForm = function (user) {
+    document.getElementById('user-form-container').classList.remove('d-none');
+    document.getElementById('user-id').value = user.id || user._id;
+    document.getElementById('user-role').value = user.role || 'user';
+    document.getElementById('user-daily-cap').value = user.daily_capacity || 8.0;
+}
+
+window.closeUserForm = function () {
+    document.getElementById('user-form-container').classList.add('d-none');
+}
+
+window.editUser = async function (id) {
+    try {
+        const res = await ApiClient.get('/users/');
+        if (res.ok) {
+            const users = await res.json();
+            const user = users.find(u => (u.id || u._id) === id);
+            if (user) openUserForm(user);
+        }
+    } catch (e) {
+        showToast('Error cargando usuario', 'error');
+    }
+}
+
+window.saveUser = async function () {
+    const id = document.getElementById('user-id').value;
+    const role = document.getElementById('user-role').value;
+    const cap = parseFloat(document.getElementById('user-daily-cap').value);
+    const weekly = cap * 5;
+
+    const payload = { role, daily_capacity: cap, weekly_capacity: weekly };
+
+    try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`/api/users/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            showToast('Usuario actualizado', 'success');
+            closeUserForm();
+            loadUsersTable();
+        } else {
+            showToast('Error al actualizar', 'error');
+        }
+    } catch (e) {
+        showToast('Error de conexión', 'error');
+    }
+}
+
+window.deleteUser = async function (id) {
+    if (!confirm('¿Eliminar este usuario irremediablemente?')) return;
+    try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`/api/users/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            showToast('Usuario eliminado', 'success');
+            loadUsersTable();
+        } else {
+            const err = await res.json();
+            showToast(err.detail || 'Error al eliminar', 'error');
+        }
+    } catch (e) {
+        showToast('Error de conexión', 'error');
+    }
+}
+
+// 3. LISTENERS
+// Listen for Modal Show to load data
+const mgmtModal = document.getElementById('managementModal');
+if (mgmtModal) {
+    mgmtModal.addEventListener('show.bs.modal', () => {
+        loadProjectsTable(); // Default active tab
+    });
+
+    const mgmtTabs = document.querySelectorAll('#managementTabs button[data-bs-toggle="tab"]');
+    mgmtTabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', (e) => {
+            if (e.target.id === 'mgmt-projects-tab') loadProjectsTable();
+            if (e.target.id === 'mgmt-users-tab') loadUsersTable();
         });
     });
+}
+
+// refreshDashboard is defined above.
+
+// ==========================================
+// 4. PROJECT BOARD (KANBAN) LOGIC
+// ==========================================
+
+async function loadProjectOverview() {
+    const container = document.getElementById('scoreboard-table-container');
+
+    // 1. Render Charts (Donuts & Stacked Bar)
+    try {
+        const [projectsRes, tasksRes] = await Promise.all([
+            ApiClient.get('/projects'),
+            ApiClient.get('/tasks')
+        ]);
+
+        if (projectsRes.ok && tasksRes.ok) {
+            const projects = await projectsRes.json();
+            const tasks = await tasksRes.json();
+
+            // Create Project Map (ID -> Name)
+            const projectMap = {};
+            projects.forEach(p => projectMap[p.id || p._id] = p.name);
+
+            // Call Render Function from charts.js
+            if (typeof renderProjectCharts === 'function') {
+                renderProjectCharts(tasks, projectMap);
+            } else {
+                console.warn('renderProjectCharts not found');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading overview charts:', error);
+    }
+
+    // 2. Render Scoreboard (Deep Dive Table)
+    if (typeof renderProjectScoreboard === 'function') {
+        await renderProjectScoreboard();
+    } else {
+        if (container) {
+            container.innerHTML = '<div class="alert alert-warning m-3">Scoreboard module not loaded.</div>';
+        }
+    }
+}
+
+async function loadProjectBoard() {
+    const container = document.getElementById('kanban-projects-container');
+    if (!container) return;
+
+    container.innerHTML = '<div class="text-center py-10 text-muted"><i class="fas fa-circle-notch fa-spin fa-2x mb-3"></i><p>Cargando Proyectos...</p></div>';
+
+    try {
+        // Fetch Projects and Tasks in parallel
+        const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Request timed out')), 10000)
+        );
+
+        const [projectsRes, tasksRes] = await Promise.race([
+            Promise.all([
+                ApiClient.get('/projects'),
+                ApiClient.get('/tasks')
+            ]),
+            timeout
+        ]);
+
+        if (!projectsRes.ok || !tasksRes.ok) {
+            throw new Error(`API Error: Projects ${projectsRes.status}, Tasks ${tasksRes.status}`);
+        }
+
+        const projects = await projectsRes.json();
+        const tasks = await tasksRes.json();
+
+        // Process data for Kanban
+        const projectsWithTasks = projects.map(project => {
+            // Ensure ID compatibility
+            const pid = project.id || project._id;
+            const projectTasks = tasks.filter(t => (t.project_id === pid) || (t.project_id === String(pid)));
+
+            // Helper to map API task to Kanban task
+            const mapTask = (t) => ({
+                ...t,
+                id: t.id || t._id,
+                title: t.title || t.task_name || 'Sin Título',
+                time: t.estimated_hours ? `${t.estimated_hours}h` : '0h',
+                date: t.due_date ? new Date(t.due_date).toLocaleDateString() : 'Sin fecha',
+                completed: t.status === 'COMPLETED'
+            });
+
+            return {
+                ...project,
+                tasks: {
+                    todo: projectTasks.filter(t => ['PENDING', 'IN_PROGRESS', 'ON_HOLD'].includes(t.status)).map(mapTask),
+                    blocked: projectTasks.filter(t => ['BLOCKED', 'CANCELLED'].includes(t.status)).map(mapTask),
+                    done: projectTasks.filter(t => ['COMPLETED'].includes(t.status)).map(mapTask)
+                }
+            };
+        });
+
+        // Add "No Project" bucket if there are tasks without project? 
+        // For now, adhere to "Project Board" == Projects.
+
+        if (projectsWithTasks.length === 0) {
+            container.innerHTML = '<div class="text-center py-10 text-muted"><p>No hay proyectos activos.</p></div>';
+            return;
+        }
+
+        // Render using kanban-premium.js function
+        if (typeof renderProjectCards === 'function') {
+            renderProjectCards(projectsWithTasks);
+        } else {
+            console.error('renderProjectCards not found');
+            container.innerHTML = '<div class="alert alert-danger">Error: Librería Kanban no cargada.</div>';
+        }
+
+    } catch (error) {
+        console.error('Error loading board:', error);
+        container.innerHTML = '<div class="alert alert-danger">Error al cargar el tablero.</div>';
+    }
+}
+
+// ==========================================
+// 5. AI AUDIT LOGIC
+// ==========================================
+
+let auditCharts = {};
+
+async function loadAiAudit() {
+    const container = document.getElementById('ai-audit-section');
+    // loading indicator could go here
+
+    try {
+        // Fetch Data in Parallel
+        const [healthRes, tasksRes] = await Promise.all([
+            ApiClient.get('/audit/health-score'),
+            ApiClient.get('/audit/tasks-with-audit')
+        ]);
+
+        const healthData = healthRes.ok ? await healthRes.json() : {};
+        const tasksData = tasksRes.ok ? await tasksRes.json() : { tasks: [] };
+
+        // Update UI
+        updateAuditKPIs(healthData);
+        renderAuditTable(tasksData);
+        renderAuditCharts(healthData, tasksData);
+
+    } catch (error) {
+        console.error('Error loading audit:', error);
+    }
+}
+
+function updateAuditKPIs(data) {
+    document.getElementById('health-score-value').textContent = data.health_score ? Math.round(data.health_score) : '--';
+    document.getElementById('health-score-grade').textContent = data.grade || '?';
+}
+
+function renderAuditTable(data) {
+    const tableBody = document.querySelector('#audit-table tbody');
+    if (!tableBody) return;
+
+    document.getElementById('audited-count').textContent = data.total || 0;
+
+    // Count critical
+    const critical = data.tasks ? data.tasks.filter(t => t.ai_audit.risk_level === 'CRITICAL').length : 0;
+    document.getElementById('critical-count').textContent = critical;
+
+    if (data.tasks && data.tasks.length > 0) {
+        tableBody.innerHTML = data.tasks.map(t => `
+            <tr>
+                <td class="ps-4">
+                    <div class="fw-bold">${t.task_name}</div>
+                    <div class="small text-muted">${t.assigned_to}</div>
+                </td>
+                <td>${t.estimated_hours}h</td>
+                <td>${t.ai_audit.benchmark_hours?.toFixed(1) || '-'}h</td>
+                <td>
+                    <span class="${t.ai_audit.deviation_percentage > 20 ? 'text-danger' : 'text-success'}">
+                        ${t.ai_audit.deviation_percentage?.toFixed(0)}%
+                    </span>
+                </td>
+                <td><span class="badgex risk-${t.ai_audit.risk_level}">${t.ai_audit.risk_level}</span></td>
+                <td><small>${t.ai_audit.recommended_action || '-'}</small></td>
+            </tr>
+        `).join('');
+    } else {
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No hay tareas auditadas aún.</td></tr>';
+    }
+}
+
+function renderAuditCharts(healthData, tasksData) {
+    // 1. Risk Distribution Chart
+    const riskCtx = document.getElementById('risk-chart');
+    if (riskCtx && healthData.risk_distribution) {
+        if (auditCharts.risk) auditCharts.risk.destroy();
+
+        auditCharts.risk = new Chart(riskCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Safe', 'Warning', 'Critical'],
+                datasets: [{
+                    data: [
+                        healthData.risk_distribution.SAFE || 0,
+                        healthData.risk_distribution.WARNING || 0,
+                        healthData.risk_distribution.CRITICAL || 0
+                    ],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    // 2. Scatter Plot (Estimated vs Benchmark)
+    const scatterCtx = document.getElementById('scatter-chart');
+    if (scatterCtx && tasksData.tasks) {
+        if (auditCharts.scatter) auditCharts.scatter.destroy();
+
+        const scatterData = tasksData.tasks.map(t => ({
+            x: t.estimated_hours,
+            y: t.ai_audit.benchmark_hours || 0,
+            task: t.task_name
+        }));
+
+        auditCharts.scatter = new Chart(scatterCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Tareas',
+                    data: scatterData,
+                    backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                    borderColor: 'rgba(99, 102, 241, 1)',
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }, {
+                    label: 'Línea Ideal',
+                    data: [{ x: 0, y: 0 }, { x: 100, y: 100 }],
+                    type: 'line',
+                    borderColor: 'rgba(200, 200, 200, 0.5)',
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: { display: true, text: 'Estimación Humana (h)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Benchmark IA (h)' }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const pt = context.raw;
+                                return `${pt.task}: Est ${pt.x}h vs IA ${pt.y}h`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+async function runAuditBatch() {
+    const btn = document.getElementById('btn-run-audit');
+    const spinner = document.getElementById('audit-loading');
+
+    if (btn) btn.disabled = true;
+    if (spinner) spinner.style.display = 'block';
+
+    try {
+        const res = await ApiClient.post('/audit/batch');
+        const result = await res.json();
+
+        if (res.ok) {
+            showToast(`Auditoría completada. ${result.tasks_audited} tareas analizadas.`, 'success');
+            loadAiAudit(); // Refresh UI
+        } else {
+            showToast('Error en auditoría', 'error');
+        }
+    } catch (e) {
+        showToast('Error de conexión', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+        if (spinner) spinner.style.display = 'none';
+    }
+}
+
+// ==========================================
+// 6. EVENT LISTENERS INITIALIZATION
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Tab Listeners
+    const scoreboardTab = document.getElementById('scoreboard-tab');
+    if (scoreboardTab) {
+        scoreboardTab.addEventListener('shown.bs.tab', () => loadProjectBoard());
+    }
+
+    const aiAuditTab = document.getElementById('ai-audit-tab');
+    if (aiAuditTab) {
+        aiAuditTab.addEventListener('shown.bs.tab', () => loadAiAudit());
+    }
+
+    // Button Listeners
+    const runAuditBtn = document.getElementById('btn-run-audit');
+    if (runAuditBtn) {
+        runAuditBtn.addEventListener('click', runAuditBatch);
+    }
 });
 
+// ==========================================
+// 7. CSV UPLOAD
+// ==========================================
 
+async function uploadCSV() {
+    const input = document.getElementById('csv-upload-input');
+    if (!input || !input.files || input.files.length === 0) {
+        showToast('Por favor selecciona un archivo CSV primero.', 'warning');
+        return;
+    }
+
+    const file = input.files[0];
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showToast('Solo se permiten archivos .csv', 'error');
+        return;
+    }
+
+    // Visual feedback: disable button and show loading
+    const uploadBtn = document.querySelector('[onclick="uploadCSV()"]');
+    const originalText = uploadBtn ? uploadBtn.textContent : 'Cargar';
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status"></span> Cargando...`;
+    }
+
+    showToast(`Procesando "${file.name}"...`, 'info');
+
+    try {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            showToast('Sesión expirada. Por favor inicia sesión nuevamente.', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/tasks/upload-csv', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok && !result.error) {
+            const inserted = result.inserted || 0;
+            const failed = result.failed || 0;
+            const projectsCreated = result.projects_created || 0;
+
+            let msg = `✅ ${inserted} tarea(s) importada(s) exitosamente.`;
+            if (projectsCreated > 0) msg += ` ${projectsCreated} proyecto(s) nuevos creados.`;
+            if (failed > 0) msg += ` ⚠️ ${failed} fila(s) con error.`;
+
+            showToast(msg, inserted > 0 ? 'success' : 'warning');
+
+            // Reset file input UI
+            input.value = '';
+            const fileNameEl = document.getElementById('file-name-nav');
+            if (fileNameEl) fileNameEl.textContent = 'Seleccionar Archivo';
+
+            // Close dropdown
+            const dropdown = document.getElementById('data-mgmt-dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+
+            // Refresh dashboard data
+            if (typeof refreshDashboard === 'function') {
+                setTimeout(() => refreshDashboard(), 800);
+            }
+        } else {
+            const errMsg = result.detail || result.error || 'Error desconocido al procesar el CSV.';
+            showToast(`❌ Error: ${errMsg}`, 'error');
+            console.error('CSV Upload Error:', result);
+        }
+    } catch (err) {
+        console.error('CSV Upload Exception:', err);
+        showToast('Error de red al subir el CSV. Verifica tu conexión.', 'error');
+    } finally {
+        if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = originalText;
+        }
+    }
+}
+
+// Expose globally (called from inline onclick in navigation.js)
+window.uploadCSV = uploadCSV;
+
+// ── MÓDULO CRUD DE TAREAS ────────────────────────────────────
+function toggleTasksCrudModule() {
+    const container = document.getElementById('tasks-crud-container');
+    const btn = document.getElementById('btn-toggle-crud-module');
+    if (!container) return;
+
+    const isOpen = container.style.display === 'block';
+    container.style.display = isOpen ? 'none' : 'block';
+
+    if (btn) {
+        btn.innerHTML = isOpen
+            ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> Abrir Módulo Tareas'
+            : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg> Cerrar Módulo';
+    }
+}
+window.toggleTasksCrudModule = toggleTasksCrudModule;

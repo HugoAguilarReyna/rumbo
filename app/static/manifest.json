@@ -1,6 +1,6 @@
 {
-    "name": "ProjectHub - Project Management",
-    "short_name": "ProjectHub",
+    "name": "RUMBO - Project Management",
+    "short_name": "RUMBO",
     "description": "Premium project management and task tracking application",
     "start_url": "/static/pages/index.html",
     "display": "standalone",
