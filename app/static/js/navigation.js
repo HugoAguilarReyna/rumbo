@@ -26,12 +26,7 @@ class PremiumNavigation {
                 <!-- Logo Section -->
                 <div class="navbar-brand">
                     <div class="logo-wrapper">
-                        <svg class="logo-icon" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2"/>
-                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2"/>
-                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        <span class="logo-text">🚀 RUMBO</span>
+                        <span class="logo-text">RUMBO</span>
                     </div>
                 </div>
 
