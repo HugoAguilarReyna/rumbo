@@ -87,19 +87,6 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="capacity-tab" data-bs-toggle="tab" data-bs-target="#capacity"
-                        type="button" role="tab" aria-selected="false">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="me-2">
-                            <path
-                                d="M16.2426 6.34317L14.8284 4.92896C13.5621 3.66262 12 3 12 3C12 3 6 9 6 15C6 18.3137 8.68629 21 12 21C15.3137 21 18 18.3137 18 15C18 13 17 11 16.2426 6.34317Z"
-                                stroke="currentColor" stroke-width="2" />
-                            <path d="M12 21V15M12 15L14.5 12" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" />
-                        </svg>
-                        Capacidad
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="ai-audit-tab" data-bs-toggle="tab" data-bs-target="#ai-audit-section"
                         type="button" role="tab" aria-selected="false">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="me-2" stroke="currentColor"
@@ -444,7 +431,8 @@
                                 Abrir Módulo Tareas
                             </button>
                         </div>
-                        <div id="tasks-crud-container" style="display:none; position:relative; left:50%; transform:translateX(-50%); width:96vw;">
+                        <div id="tasks-crud-container"
+                            style="display:none; position:relative; left:50%; transform:translateX(-50%); width:96vw;">
                             <iframe id="tasks-crud-iframe" src="/static/pages/rumbo-tasks.html"
                                 style="width:100%; height:calc(100vh - 160px); border:none; border-radius:12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); display:block;"
                                 title="Módulo CRUD de Tareas RUMBO">
